@@ -59,11 +59,15 @@ const artikel = defineCollection({
 // unter jedem Artikel, der Text darunter für die eigene Seite. Fehlt die Datei, gibt es Seite und Kasten nicht.
 const seiten = defineCollection({
   loader: glob({ base: "./src/content/seiten", pattern: "*.md" }),
-  schema: z.object({
-    titel: z.string().min(1),
-    kurzprofil: z.string().min(1).optional(),
-    beschreibung: z.string().min(1).optional(),
-  }),
+  schema: ({ image }) =>
+    z.object({
+      titel: z.string().min(1),
+      kurzprofil: z.string().min(1).optional(),
+      beschreibung: z.string().min(1).optional(),
+      // Bild nur auf der Seite selbst (oben, Querformat) und als Vorschaubild; nie im Kasten unter den Artikeln
+      bild: image().optional(),
+      bildtext: z.string().min(1).optional(),
+    }),
 });
 
 export const collections = { artikel, seiten };

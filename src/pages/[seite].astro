@@ -1,6 +1,7 @@
 ---
 // Eine feste Seite (src/content/seiten/<kennung>.md) unter /<kennung>/, etwa die Autorenseite /autor/.
 import { render } from "astro:content";
+import { Image } from "astro:assets";
 import Grundgeruest from "../layouts/Grundgeruest.astro";
 import Seitenkopf from "../components/Seitenkopf.astro";
 import { alleSeiten, type Seite } from "../lib/seiten";
@@ -18,9 +19,10 @@ const { seite } = Astro.props;
 const { Content } = await render(seite);
 ---
 
-<Grundgeruest titel={seite.data.titel} beschreibung={seite.data.beschreibung ?? seite.data.kurzprofil ?? SEITE.beschreibung}>
+<Grundgeruest titel={seite.data.titel} beschreibung={seite.data.beschreibung ?? seite.data.kurzprofil ?? SEITE.beschreibung} bild={seite.data.bild} bildtext={seite.data.bildtext}>
   <Seitenkopf pfad={[{ name: seite.data.titel }]} titel={seite.data.titel} unterzeile={seite.id === "autor" ? SEITE.autor : undefined} />
   <div class="inhalt feste-seite">
+    {seite.data.bild && <Image class="artikelbild" src={seite.data.bild} alt={seite.data.bildtext ?? ""} widths={[720, 1080, seite.data.bild.width]} sizes="(min-width: 900px) 46rem, 100vw" loading="eager" />}
     <Content />
   </div>
 </Grundgeruest>
