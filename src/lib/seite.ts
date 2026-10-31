@@ -2,11 +2,15 @@
 // Die Farben entsprechen dem Grund der beiden Themen in styles/grund.css (--grund); welches gilt, regelt lib/thema.ts.
 
 export const SEITE = {
-  name: "KI-Wissen",
-  kurzname: "KI-Wissen",
+  name: "Digitales Leben",
+  kurzname: "Digitales Leben",
+  // Wortmarke in der Kopfleiste: kräftiger und leiser Teil in Festbreitenschrift
+  marke: { stark: "digitales", leise: "-leben" },
   leitsatz: "aus der echten Praxis",
+  // Marke und Autor in einem; der Auftritt ist anonym, nie ein echter Name
+  autor: "HalloWelt42",
   beschreibung:
-    "Artikel rund um KI: Grundlagen, Modelle und Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche.",
+    "Fachartikel rund um Technik und digitales Leben: Grundlagen, Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche. KI ist eines der Themen.",
   sprache: "de",
   farbe: { dunkel: "#1d1b18", hell: "#faf8f4" },
 } as const;

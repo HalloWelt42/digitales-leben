@@ -6,7 +6,7 @@ import { CODE_DUNKEL, CODE_HELL } from "./codefarben.mjs";
 
 export default defineConfig({
   site: process.env.SEITE_ADRESSE ?? "https://hallowelt42.github.io",
-  base: process.env.SEITE_BASIS ?? "/ki-wissen",
+  base: process.env.SEITE_BASIS ?? "/digitales-leben",
   trailingSlash: "always",
   integrations: [mdx()],
   markdown: {

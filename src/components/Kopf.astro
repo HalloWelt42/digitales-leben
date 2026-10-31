@@ -3,9 +3,14 @@
 import Marke from "./Marke.astro";
 import Themaschalter from "./Themaschalter.astro";
 import { NAVIGATION } from "../lib/seite";
+import { autorSeite, seitenPfad } from "../lib/seiten";
 import { istAktiv, pfad } from "../lib/pfad";
 
 const aktuell = Astro.url.pathname;
+// die Autorenseite steht in der Navigation, sobald es sie gibt (Text aus src/content/seiten/autor.md)
+const autor = await autorSeite();
+const eintraege = [...NAVIGATION.map((e) => ({ name: e.name, href: pfad(e.weg), weg: e.weg })),
+  ...(autor ? [{ name: autor.data.titel, href: seitenPfad(autor), weg: `/${autor.id}/` }] : [])];
 ---
 
 <header class="kopf">
@@ -14,9 +19,9 @@ const aktuell = Astro.url.pathname;
     <nav aria-label="Hauptnavigation">
       <ul>
         {
-          NAVIGATION.map((e) => (
+          eintraege.map((e) => (
             <li>
-              <a href={pfad(e.weg)} aria-current={istAktiv(e.weg, aktuell) ? "page" : undefined}>
+              <a href={e.href} aria-current={istAktiv(e.weg, aktuell) ? "page" : undefined}>
                 {e.name}
               </a>
             </li>

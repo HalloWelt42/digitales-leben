@@ -1,0 +1,42 @@
+---
+// Kasten "Autor" unter jedem Artikel: Name (die Marke, nie ein echter Name), Kurzprofil aus der Autorenseite und der
+// Weg dorthin. Ohne Autorenseite (src/content/seiten/autor.md) erscheint er nicht.
+import { autorSeite, seitenPfad } from "../lib/seiten";
+import { SEITE } from "../lib/seite";
+
+const seite = await autorSeite();
+---
+
+{
+  seite?.data.kurzprofil && (
+    <aside class="autor" aria-labelledby="autor-name">
+      <p class="etikett">Autor</p>
+      <p class="name" id="autor-name">{SEITE.autor}</p>
+      <p class="profil">{seite.data.kurzprofil}</p>
+      <a href={seitenPfad(seite)}>Mehr über den Autor</a>
+    </aside>
+  )
+}
+
+<style>
+  .autor {
+    clear: both;
+    margin-top: 3rem;
+    padding: 1.1rem 1.25rem 1.25rem;
+    border-left: 3px solid var(--akzent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--flaeche);
+  }
+
+  .name {
+    margin: 0.4rem 0 0;
+    color: var(--text-stark);
+    font-family: var(--schrift-titel);
+    font-size: 1.35rem;
+    font-weight: 600;
+  }
+
+  .profil {
+    margin: 0.5rem 0 0.8rem;
+  }
+</style>

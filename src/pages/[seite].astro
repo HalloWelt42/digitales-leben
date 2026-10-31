@@ -1,0 +1,36 @@
+---
+// Eine feste Seite (src/content/seiten/<kennung>.md) unter /<kennung>/, etwa die Autorenseite /autor/.
+import { render } from "astro:content";
+import Grundgeruest from "../layouts/Grundgeruest.astro";
+import Seitenkopf from "../components/Seitenkopf.astro";
+import { alleSeiten, type Seite } from "../lib/seiten";
+import { SEITE } from "../lib/seite";
+
+export async function getStaticPaths() {
+  return (await alleSeiten()).map((seite) => ({ params: { seite: seite.id }, props: { seite } }));
+}
+
+interface Props {
+  seite: Seite;
+}
+
+const { seite } = Astro.props;
+const { Content } = await render(seite);
+---
+
+<Grundgeruest titel={seite.data.titel} beschreibung={seite.data.beschreibung ?? seite.data.kurzprofil ?? SEITE.beschreibung}>
+  <Seitenkopf pfad={[{ name: seite.data.titel }]} titel={seite.data.titel} unterzeile={seite.id === "autor" ? SEITE.autor : undefined} />
+  <div class="inhalt feste-seite">
+    <Content />
+  </div>
+</Grundgeruest>
+
+<style>
+  .feste-seite {
+    padding-block: 2.5rem var(--abstand-gross);
+  }
+
+  .feste-seite :global(h2:first-child) {
+    margin-top: 0;
+  }
+</style>

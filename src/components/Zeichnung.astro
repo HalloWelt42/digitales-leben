@@ -1,0 +1,38 @@
+---
+// Kleine Zeichnung neben einem Abschnitt: freigestelltes Bild (Alphakanal), das die Seite über eine Maske in der
+// Akzentfarbe des Themas einfärbt, damit die Linie hell wie dunkel passt. Breit steht sie rechts neben dem Text,
+// schmal über dem Text des Abschnitts. Im Artikel (MDX) direkt nach der Zwischenüberschrift setzen:
+//   import Zeichnung from "../../components/Zeichnung.astro";
+//   import glas from "./<name>-glas.webp";
+//   <Zeichnung bild={glas} text="Was die Zeichnung zeigt" />
+
+interface Props {
+  bild: ImageMetadata;
+  text: string;
+}
+
+const { bild, text } = Astro.props;
+---
+
+<span class="zeichnung" role="img" aria-label={text} style={`--maske: url("${bild.src}")`}></span>
+
+<style>
+  .zeichnung {
+    display: block;
+    width: min(100%, var(--zeichnung-breite, 20rem));
+    aspect-ratio: 1;
+    margin: 0 auto 1rem;
+    background-color: var(--akzent);
+    -webkit-mask: var(--maske) center / contain no-repeat;
+    mask: var(--maske) center / contain no-repeat;
+  }
+
+  @media (min-width: 700px) {
+    .zeichnung {
+      float: right;
+      clear: both;
+      width: min(44%, var(--zeichnung-breite, 20rem));
+      margin: 0.5rem 0 1rem 2rem;
+    }
+  }
+</style>

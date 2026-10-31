@@ -6,9 +6,11 @@ import { render } from "astro:content";
 import { Image } from "astro:assets";
 import Grundgeruest from "../../layouts/Grundgeruest.astro";
 import Seitenkopf from "../../components/Seitenkopf.astro";
+import AutorKasten from "../../components/AutorKasten.astro";
 import { SCHLAGWORT_ARTEN, artikelArt, nachtragArt } from "../../lib/aufbau";
 import { alleArtikel, gliederungPruefen, istEntwurf, lesezeit, nachtraege, schlagwortPfad, schlagwortWerte, type Artikel } from "../../lib/artikel";
 import { datumIso, datumText } from "../../lib/datum";
+import { SEITE } from "../../lib/seite";
 
 export async function getStaticPaths() {
   return (await alleArtikel()).map((artikel) => ({ params: { id: artikel.id }, props: { artikel } }));
@@ -40,6 +42,7 @@ const art = artikelArt(data.art).name;
 <Grundgeruest titel={data.titel} beschreibung={data.zusammenfassung} art="article" bild={data.bild} bildtext={data.bildtext}>
   <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={istEntwurf(artikel) ? `Entwurf, nicht veröffentlicht · ${art}` : art}>
     <Fragment slot="angaben">
+      <span>von {SEITE.autor}</span>
       <span><time datetime={datumIso(data.datum)}>{datumText(data.datum)}</time></span>
       <span>{lesezeit(artikel)} Min Lesezeit</span>
       {
@@ -85,6 +88,8 @@ const art = artikelArt(data.art).name;
           </section>
         )
       }
+
+      <AutorKasten />
     </article>
 
     <aside class="seitenleiste">

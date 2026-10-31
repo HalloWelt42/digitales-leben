@@ -1,9 +1,10 @@
 ---
 // Wortmarke der Seite: Symbol und Name in Festbreitenschrift
 import { pfad } from "../lib/pfad";
+import { SEITE } from "../lib/seite";
 ---
 
-<a class="marke" href={pfad("/")} aria-label="KI-Wissen, zur Startseite">
+<a class="marke" href={pfad("/")} aria-label={`${SEITE.name}, zur Startseite`}>
   <svg viewBox="0 0 512 512" aria-hidden="true">
     <rect x="132" y="262" width="60" height="122" rx="8" class="balken" />
     <rect x="226" y="186" width="60" height="198" rx="8" class="balken" />
@@ -11,7 +12,7 @@ import { pfad } from "../lib/pfad";
     <rect x="108" y="384" width="296" height="18" rx="9" class="grundlinie" />
     <circle cx="350" cy="136" r="34" class="punkt" />
   </svg>
-  <span>ki<span class="leise">-wissen</span></span>
+  <span>{SEITE.marke.stark}<span class="leise">{SEITE.marke.leise}</span></span>
 </a>
 
 <style>

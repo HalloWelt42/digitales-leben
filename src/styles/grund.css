@@ -308,6 +308,12 @@ pre {
   font-weight: var(--shiki-dark-font-weight);
 }
 
+/* Tabellen und Codeblöcke beginnen unter einer Zeichnung (components/Zeichnung.astro), nie gequetscht daneben */
+.inhalt table,
+.inhalt pre {
+  clear: both;
+}
+
 /* Tabellen (Ergebnisse): ist eine Tabelle breiter als die Spalte, rollt nur sie selbst, nie die Seite */
 .inhalt table {
   display: block;

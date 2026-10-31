@@ -37,12 +37,14 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{voller}</title>
     <meta name="description" content={beschreibung} />
+    <meta name="author" content={SEITE.autor} />
     <link rel="canonical" href={kanonisch} />
     <meta property="og:title" content={titel ?? SEITE.name} />
     <meta property="og:description" content={beschreibung} />
     <meta property="og:type" content={art} />
     <meta property="og:url" content={kanonisch} />
     <meta property="og:site_name" content={SEITE.name} />
+    {art === "article" && <meta property="article:author" content={SEITE.autor} />}
     {
       vorschaubild && (
         <>

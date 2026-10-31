@@ -55,4 +55,15 @@ const artikel = defineCollection({
     }),
 });
 
-export const collections = { artikel };
+// Feste Seiten mit Text aus einer Datei (src/content/seiten/<kennung>.md), etwa autor.md: kurzprofil für den Kasten
+// unter jedem Artikel, der Text darunter für die eigene Seite. Fehlt die Datei, gibt es Seite und Kasten nicht.
+const seiten = defineCollection({
+  loader: glob({ base: "./src/content/seiten", pattern: "*.md" }),
+  schema: z.object({
+    titel: z.string().min(1),
+    kurzprofil: z.string().min(1).optional(),
+    beschreibung: z.string().min(1).optional(),
+  }),
+});
+
+export const collections = { artikel, seiten };

@@ -1,6 +1,8 @@
-# KI-Wissen
+# Digitales Leben
 
-Artikel rund um KI als statische Seite: Grundlagen, Erfahrungen, Anleitungen, Messungen und Vergleiche.
+Fachmagazin rund um Technik und digitales Leben als statische Seite: Grundlagen, Erfahrungen, Anleitungen, Messungen
+und Vergleiche; KI ist eines der Themen. Adresse: https://hallowelt42.github.io/digitales-leben/ (Repo
+HalloWelt42/digitales-leben, der lokale Ordner heißt vorerst noch KI-Wissen).
 
 ## Artikel
 
