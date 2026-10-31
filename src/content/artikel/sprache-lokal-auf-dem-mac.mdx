@@ -1,0 +1,389 @@
+---
+titel: "Sprache lokal auf dem Mac: erkennen, trennen, sprechen"
+art: messung
+frage: "Wie gut erkennen, trennen und sprechen lokale Sprachmodelle Deutsch auf einem Mac mit M4 Max, und was kosten sie an Zeit und Speicher?"
+zusammenfassung: "Whisper Large V3 in drei Fassungen, MOSS-Transcribe-Diarize, pyannote und Qwen3-TTS auf einem Mac mit M4 Max und 128 GB: Tempo, Speicher und typische Fehler bei deutscher Sprache. Dazu ein Absturz mit über 100 GB Speicher, seine Ursache und warum Abschnitte an Sprechpausen und eine harte Speichergrenze je Dienst das Problem lösen."
+bild: "./sprache-lokal-auf-dem-mac.jpg"
+bildtext: "Illustration in den Farben der Seite: ein Laptop auf einem Schreibtisch unter einer Lampe; orangefarbene Schallwellen ziehen von ihm hinüber zu einem kleinen Lautsprecher"
+datum: 2026-10-31
+schlagworte:
+  thema: ["Spracherkennung", "Sprechertrennung", "Sprachausgabe", "Speicher"]
+  modell: ["Whisper Large V3", "Whisper Large V3 Turbo", "MOSS-Transcribe-Diarize 0.9B", "pyannote speaker-diarization 3.1", "Qwen3-TTS 1.7B CustomVoice", "Qwen3-TTS 1.7B Base"]
+  faehigkeit: ["Hören", "Sprechertrennung", "Sprechen", "Stimmklon"]
+  geraet: ["MacBook Pro M4 Max"]
+nachtraege: []
+---
+
+import Zeichnung from "../../components/Zeichnung.astro";
+import glas from "./sprache-lokal-auf-dem-mac-glas.webp";
+import welle from "./sprache-lokal-auf-dem-mac-welle.webp";
+import blasen from "./sprache-lokal-auf-dem-mac-blasen.webp";
+import lautsprecher from "./sprache-lokal-auf-dem-mac-lautsprecher.webp";
+import chip from "./sprache-lokal-auf-dem-mac-chip.webp";
+
+Sprachnachrichten abschreiben, Gespräche nach Sprechern ordnen, Texte vorlesen lassen, auch mit einer geklonten
+Stimme: das alles läuft hier lokal auf einem Mac, ohne Cloud. Dieser Artikel sammelt die Messungen und Erfahrungen
+eines Tages mit mehreren Sprachmodellen. Zu dem Tag gehört auch ein Absturz, bei dem ein kleines Modell mit 1,8 GB
+Gewichten über 100 GB Speicher belegte.
+
+**Das Wichtigste in Kürze**
+
+- **Whisper Large V3** bleibt für deutschen Text die beste Wahl: etwa 7-fache Echtzeit, 6,1 GB Spitze. In **8 Bit**
+  war es auf derselben Aufnahme gleich gut (4 von 2782 Wörtern anders), bei 1,3 GB weniger Speicher.
+- **Whisper Large V3 Turbo** ist 1,7-mal schneller, verhört sich aber deutlich öfter, vor allem bei Namen und ganzen
+  Wendungen.
+- **MOSS-Transcribe-Diarize 0.9B** hört und trennt Sprecher in einem Durchgang, liegt beim deutschen Text aber klar
+  hinter Whisper.
+- **Mehr als jeder Modellwechsel** brachte der Ablauf: Fachwörter als Hinweis, Schnitte nur in Sprechpausen,
+  Zusammenfügen an Satzenden.
+- **Der Absturz** kam von torch auf der Grafik des Macs in float32 mit 7 Minuten Ton am Stück. Über MLX in bfloat16
+  und in Abschnitten von 30 Sekunden braucht dasselbe Modell 3,9 GB. Länger müssen die Abschnitte nicht sein.
+- **MLX** brachte hier Speicher und eine harte Grenze im Prozess. Genauer wird ein Modell dadurch nicht.
+
+## Der Absturz und seine Ursache
+
+<Zeichnung bild={glas} text="Zeichnung: ein Glas, über dessen Rand Wasser läuft" />
+
+Der Anlass für die Messungen war ein Fehlschlag. MOSS-Transcribe-Diarize sollte als neuer Hördienst eine
+Sprachnachricht von 7 Minuten abschreiben, und zwar am Stück. Der Dienst lief über torch auf der Grafik (Gerät mps) in
+float32, so wie die Beispiele der Herkunft es für alles außer cuda vorsehen. Angemeldet war er mit 6 GB. Etwa zehn
+Minuten nach dem Start belegte er mindestens 99,6 GB, die Speicheraufzeichnung hielt eine Spitze von 133,5 GB fest,
+und der Mac stürzte ab. Nach dem Neustart fuhr die Dienstverwaltung den Dienst sofort wieder hoch, weil er als
+"soll laufen" eingetragen war.
+
+Nachgerechnet braucht das Modell für 7 Minuten Ton in float32 höchstens etwa 8 bis 10 GB: 3,6 GB Gewichte, dazu ein
+linear wachsender KV-Cache und kurzzeitig die Aufmerksamkeit über die ganze Eingabe. Den Rest hat nicht das Modell
+belegt. Die wahrscheinliche Ursache, aus Code und Dokumentation hergeleitet, aber nicht nachgemessen:
+
+- Bei jedem der bis zu 5040 Ausgabeschritte legt torch für jede der 28 Schichten neue, jeweils etwas größere Tensoren
+  an (Anhängen an den KV-Cache, dazu eine Kopie von K und V auf 16 Köpfe, weil die gruppierte Aufmerksamkeit auf mps
+  erst ab torch 2.13 direkt geht). Die alten Puffer passen für die nächste Anfrage nicht mehr.
+- Die Speicherverwaltung von torch auf mps gibt solche Puffer erst zurück, wenn der Prozess mehr als das 1,4-fache der
+  empfohlenen Arbeitsmenge belegt, die harte Grenze liegt beim 1,7-fachen
+  ([Umgebungsvariablen für mps](https://docs.pytorch.org/docs/stable/mps_environment_variables.html)). Die empfohlene
+  Arbeitsmenge liegt auf diesem Mac bei 96 GiB. Beide Schwellen liegen damit über dem eingebauten Speicher.
+- Dazu übersetzt mps jede neue Tensorform in einen eigenen Graphen und hebt ihn auf. Leeren lässt sich das erst ab
+  torch 2.13; gelaufen ist torch 2.8.
+
+Beides wächst mit Schrittzahl mal Länge, also etwa quadratisch mit der Tonlänge. Vom einen Messpunkt hochgerechnet
+hätten Abschnitte von 120 s etwa 8 GB zusätzlich zu den Gewichten gebraucht, Abschnitte von 60 s etwa 2 GB. Das ist
+eine Schätzung, keine Messung. Kürzere Abschnitte hätten den Absturz aller Rechnung nach verhindert.
+
+Geschützt hat nichts. Die Dienstverwaltung maß den Speicher sogar richtig, nutzte den angemeldeten Wert aber nur zur
+Planung. Eine Grenze, die eingreift, gab es nicht. Die Herkunft des Modells verweist für den Mac übrigens selbst auf
+[mlx-audio](https://github.com/Blaizzy/mlx-audio), wo MOSS-Transcribe-Diarize über MLX läuft. Eine kurze Recherche vor
+dem ersten Lauf hätte das gezeigt.
+
+## Aufbau der Messung
+
+- **Gerät:** MacBook Pro mit M4 Max und 128 GB gemeinsamem Speicher, macOS 15. Kein anderes großes Modell geladen;
+  Hintergrundarbeit wie Einbettungen wartet, solange gehört wird.
+- **Ablauf:** Eine eigene Transkriptions-App schickt Höraufträge an eine Leitstelle, die KI-Aufträge verteilt. Jedes
+  Modell läuft als eigener Dienst unter einer Dienstverwaltung am Mac. Neu hören erzeugt je Modell eine eigene Fassung
+  derselben Aufnahme; eine Vergleichsansicht zeigt zwei Fassungen nebeneinander und markiert, wo sie sich uneinig sind.
+- **Aufnahme 1:** deutsche Sprachnachricht von 17:58 min, ein Sprecher, Alltagssprache mit vielen Fachwörtern aus der
+  KI- und Heimnetzwelt. Für die Reihe zur Abschnittslänge zwei Ausschnitte von je rund 4 min (0:31 bis 4:29 und 4:29
+  bis 8:31), die Grenzen jeweils in einer Sprechpause.
+- **Aufnahme 2:** deutsches Gespräch von 40:37 min mit zwei Personen, für die Sprechertrennung.
+- **Speicher:** physischer Fußabdruck des ganzen Dienstes (phys_footprint, samt Grafikspeicher), nicht der residente
+  Speicher. Abgetastet alle 0,5 s.
+- **Tempo:** Rechenzeit des Hördienstes, als Vielfaches der Echtzeit und als Minuten Rechenzeit je Stunde Ton.
+- **Qualität:** Eine von Hand berichtigte Abschrift gab es nicht. Verglichen wurde darum mit einer Mehrheit: alle
+  Fassungen Wort für Wort ausgerichtet, je Stelle gilt, was die Mehrheit schreibt. Das Ergebnis heißt hier
+  Abweichung, nicht Wortfehlerrate.
+
+Die Modelle:
+
+| Modell | Aufgabe | Laufzeit | Gewichte |
+| --- | --- | --- | --- |
+| [Whisper Large V3](https://huggingface.co/openai/whisper-large-v3) ([MLX-Fassung](https://huggingface.co/mlx-community/whisper-large-v3-mlx)) | Spracherkennung | MLX über [mlx-whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) | float16, rund 3,1 GB, 1,55 Milliarden Parameter |
+| Whisper Large V3 in 8 Bit ([MLX-Fassung](https://huggingface.co/mlx-community/whisper-large-v3-mlx-8bit)) | Spracherkennung | MLX | 8 Bit, 1,71 GB |
+| [Whisper Large V3 Turbo](https://huggingface.co/openai/whisper-large-v3-turbo) ([MLX-Fassung](https://huggingface.co/mlx-community/whisper-large-v3-turbo)) | Spracherkennung | MLX | 16 Bit |
+| [MOSS-Transcribe-Diarize 0.9B](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize) | Erkennung mit Sprechertrennung | MLX über [mlx-audio](https://github.com/Blaizzy/mlx-audio) 0.6.3 | bfloat16, 1,83 GB |
+| [pyannote speaker-diarization 3.1](https://huggingface.co/pyannote/speaker-diarization-3.1) | Sprechertrennung | torch auf mps | float32 |
+| [ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb) | Stimmabdruck | torch auf dem Prozessor | float32 |
+| [Qwen3-TTS 1.7B CustomVoice](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice) ([MLX-Fassung](https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit)) | Sprachausgabe mit fertigen Stimmen | MLX über mlx-audio | 8 Bit |
+| [Qwen3-TTS 1.7B Base](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base) ([MLX-Fassung](https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16)) | Stimmklon aus einer Probe | MLX über mlx-audio | bfloat16 |
+
+Die Sprechpausen findet [Silero VAD](https://github.com/snakers4/silero-vad). Für alle Hördienste gelten dieselben
+Regeln zum Schneiden:
+
+```text
+Schnitt         nur in Sprechpausen (Pausen ab 500 ms, 100 ms Polster), nie an fester Zeit;
+                gesucht wird die längste Pause im letzten Drittel vor der Obergrenze
+Whisper         Fenster bis 28 s; jedes Fenster bekommt einen Stilsatz und die Fachwörter als Hinweis,
+                ohne Bezug auf den Text des vorigen Fensters
+MOSS            Abschnitte bis 30 s (geprüft bis 240 s); jeder beginnt mit dem letzten Beitrag des vorigen
+                als Vorlauf; weitere Sprecher ordnet ein Stimmabdruck (ECAPA) zu
+Zusammenfügen   ein Beitrag ohne Satzende wird mit dem folgenden verbunden
+                (gleicher Sprecher, Pause bis 2 s, höchstens 40 s)
+Speicher        harte Grenze je Dienst, Sprachmodelle höchstens 20 GB
+```
+
+Die ersten Läufe von Whisper in 8 Bit und Turbo liefen neben Tests und dem Start eines Dienstes. Mit 563 s und 177 s
+waren sie deutlich verfälscht. Die Tabellen nennen die Wiederholungen auf ruhigem Rechner.
+
+## Ergebnisse
+
+### Spracherkennung: Tempo und Speicher
+
+Aufnahme 1, die ganzen 17:58 min, alle Modelle im selben Ablauf:
+
+| Modell | Rechenzeit | Tempo | Je Stunde Ton | Spitze |
+| --- | --- | --- | --- | --- |
+| Whisper Large V3, 16 Bit | 148,7 s | 7,3-fach | 8,3 min | 6,1 GB |
+| Whisper Large V3, 8 Bit | 142,8 s | 7,6-fach | 7,9 min | 4,8 GB |
+| Whisper Large V3 Turbo, 16 Bit | 85,7 s | 12,6-fach | 4,8 min | 4,3 GB |
+| MOSS-Transcribe-Diarize 0.9B, bfloat16 | 138,3 s | 7,8-fach | 7,7 min | 3,9 GB |
+
+MOSS lief in Abschnitten von 30 s, seine Rechenzeit enthält 6 s Laden. "Je Stunde Ton" ist die Rechenzeit für eine
+Stunde Aufnahme.
+
+8 Bit spart bei Whisper Speicher, aber kaum Zeit. Turbo ist das einzige Modell, das deutlich schneller ist. Alle
+bleiben weit unter der Grenze von 20 GB.
+
+### Spracherkennung: Qualität
+
+Abweichung jeder Fassung, Wort für Wort gegen eine Mehrheit gezählt:
+
+| Modell | Gegen die Whisper-Mehrheit | Gegen drei Modelle |
+| --- | --- | --- |
+| Whisper Large V3, 16 Bit | 0,0 % | 4,8 % |
+| Whisper Large V3, 8 Bit | 0,1 % | 5,0 % |
+| Whisper Large V3 Turbo | 13,7 % | 8,8 % |
+| MOSS-Transcribe-Diarize 0.9B | 22,7 % | 17,8 % |
+| Whisper Large V3, 16 Bit, alter Ablauf ohne Hinweis | 18,5 % | 16,8 % |
+
+Die Whisper-Mehrheit besteht aus den drei Whisper-Fassungen, die Mehrheit dreier Modelle aus Whisper Large V3 in
+16 Bit, Turbo und MOSS. Jedes Modell hat in seiner eigenen Mehrheit einen Heimvorteil; die Zahlen taugen zum Ordnen,
+nicht als Fehlerrate.
+
+Fachwörter, wie oft richtig geschrieben in der ganzen Aufnahme (Auswahl):
+
+| Fachwort | Whisper 16 Bit | Whisper 8 Bit | Turbo | MOSS |
+| --- | --- | --- | --- | --- |
+| Qwen | 4 | 4 | 4 | 5 |
+| ComfyUI | 4 | 4 | 3 | 3 |
+| VAE | 3 | 3 | 2 | 3 |
+| DynDNS | 3 | 3 | 3 | 0 |
+| Zigbee | 1 | 1 | 1 | 0 |
+
+### Typische Fehler
+
+**Whisper ohne Hinweis.** Im alten Ablauf kippte Whisper Large V3 in langen Strecken in Kleinschrift ohne Satzzeichen
+und blieb dabei, bis zum nächsten Neuansatz. Fachwörter kamen falsch: Qwen als "Qen", "QN" und "Gwen", ComfyUI als
+"CompuUI", VAE als "VAIs", Zigbee als "SIGBI", Ollama als "Lama", DynDNS als "dünn DNS". Beiträge endeten mitten im
+Satz.
+
+**16 Bit gegen 8 Bit.** 4 von 2782 Wörtern verschieden, alle harmlos: "krieg" gegen "kriege" (zweimal), ein "das"
+mehr, und einmal "generieren lässt" gegen "generieren hast".
+
+**Turbo** verhört sich bei Eigennamen und ganzen Wendungen. Drei Stellen im Vergleich:
+
+| Stelle | Whisper Large V3 (16 und 8 Bit) | Turbo |
+| --- | --- | --- |
+| 0:01 | "das ist so eine Zwischenstützstelle" | "das ist als Zwischenstückstelle" |
+| 0:36 | "also die Leute sollen darauf laufen" | "also die Leute sollte drauf laufen" |
+| 1:15 | "man baut sich halt was selbst, wo man das Model einbinden kann" | "man baut sie halt bei Steps, wo man das Model hinbinden kann" |
+
+Ganz durchgehend schlechter ist Turbo aber nicht: An einzelnen Stellen schrieb es einen Modellnamen richtig, den eine
+andere Fassung als "Qen" und "QN" verhörte.
+
+**MOSS** erfindet an schwer verständlichen Stellen Wörter: "Nutella-Maschinen" statt virtuelle Maschinen, "Rahmen"
+statt RAM. DynDNS und Zigbee erkannte es nie, und der letzte Satz der Aufnahme fehlt. Dafür schreibt es wörtlich, mit
+Füllwörtern und Wiederholungen. An der Stelle 0:36 schrieb MOSS "also ich glaube, die sollte es drauf laufen"; das
+könnte sogar richtiger sein als Whisper, nachgehört ist es nicht.
+
+**Wörtlich gegen geglättet.** MOSS und Turbo schreiben Füllwörter mit, Whisper Large V3 lässt sie weg. Gegen eine
+Mehrheit, in der Whisper zweimal vorkommt, zählt das als Abweichung. Ein Teil der Abweichung von MOSS ist darum kein
+Fehler.
+
+### Was der Ablauf ausmacht
+
+Der größte Sprung kam nicht von einem anderen Modell. Derselbe Whisper Large V3 im alten Ablauf (ohne Hinweis, ohne
+Zusammenfügen) gegen den neuen Ablauf, ganze Aufnahme:
+
+| Merkmal | Alter Ablauf, 16 Bit | Neuer Ablauf, 8 Bit | Neuer Ablauf, Turbo |
+| --- | --- | --- | --- |
+| Beiträge | 70 | 88 | 88 |
+| Satzzeichen | 86 | 227 | 219 |
+| Beiträge klein beginnend | 46 | 0 | 0 |
+| Beiträge ohne Satzende | 53 | 0 | 0 |
+| Treffer bei sechs häufigen Fachwörtern | 0 | 18 | 15 |
+
+Weil 16 und 8 Bit fast wortgleich sind, kommt der Abstand vom Ablauf. Der Hinweis je Fenster (ein Satz zum Stil und
+die Fachwörter aus einem eigenen Wörterbuch) verhindert das Kippen in Kleinschrift und bringt die Fachwörter. Das
+Wörterbuch wächst nur auf Vorschlag: Wer im Transkript ein Wort berichtigt, bekommt das Angebot, es aufzunehmen, nie
+automatisch.
+
+### Sprechertrennung
+
+<Zeichnung bild={blasen} text="Zeichnung: zwei Sprechblasen, die sich überlappen" />
+
+Aufnahme 2, 40:37 min, zwei Personen. Erwartet: genau zwei Sprecher, Wechsel an der richtigen Stelle. Gehört hat
+Whisper Large V3 in 16 Bit oder MOSS in Abschnitten von 30 s, getrennt hat pyannote speaker-diarization 3.1.
+
+| Merkmal | Whisper und pyannote | Text von MOSS, Sprecher von pyannote |
+| --- | --- | --- |
+| Sprecher | 2 | 2 |
+| Beiträge je Sprecher | 93 / 80 | 187 / 130 |
+| Sprechzeit je Sprecher | 19:08 / 17:32 min | 19:21 / 17:56 min |
+| Wechsel | 25 | 25 |
+| Rechenzeit Hören | 348 s (7,0-fach) | 283 s (8,6-fach) |
+| Rechenzeit pyannote | 142 s samt Laden | 136 s |
+| Spitze Speicher | Whisper 6,1 GB, pyannote 4,2 GB | MOSS 3,8 GB, pyannote 6,0 GB |
+
+pyannote fand ohne Vorgabe der Zahl genau zwei Sprecher. Von drei nachgesehenen Wechseln waren zwei plausibel, einer
+lag mitten im Satz vor dem letzten Wort und ist vermutlich falsch.
+
+Die rechte Spalte sollte eigentlich MOSS allein zeigen. MOSS lieferte aber in einem Stück von 0,4 s keine
+Sprechermarken, und die App verwarf daraufhin still alle Sprecher von MOSS und fragte pyannote. Darum sind die
+Wechselstellen beider Läufe gleich. Der Fehler ist im Code behoben, die Messung von MOSS allein
+und einer Mischung (Text von Whisper, Sprecher von MOSS) steht noch aus.
+
+Was über MOSS als Sprechertrenner feststeht: Es braucht kein Whisper, es hört und trennt in einem Durchgang. Die
+Sprecherkennungen gelten aber nur innerhalb eines Durchgangs
+([Fehlerbericht 20](https://github.com/OpenMOSS/MOSS-Transcribe-Diarize/issues/20)). Über Abschnitte hinweg trägt sie
+hier der doppelt gehörte Vorlauf, dann der Stimmabdruck. Äußerungen unter einer Sekunde tragen keinen brauchbaren
+Stimmabdruck und erben darum den Sprecher ihres Abschnitts
+([Fehlerbericht 60](https://github.com/OpenMOSS/MOSS-Transcribe-Diarize/issues/60)). Auf Aufnahme 1 mit einem Sprecher
+fand MOSS ab 30 s je Abschnitt richtig einen Sprecher; mit 15 s erfand es einen zweiten.
+
+### Abschnittslänge bei MOSS
+
+<Zeichnung bild={welle} text="Zeichnung: eine Tonwelle, die an einer stillen Stelle zwischen zwei Lauten geteilt ist" />
+
+Nach dem Umbau auf MLX in bfloat16 und Abschnitte an Sprechpausen: Wie lang sollen die Abschnitte sein? Gestartet wurde
+mit 15 s, die nächste Länge kam erst, wenn die vorige sauber lief und der Speicher höchstens linear wuchs. Ausschnitt 1
+von Aufnahme 1, Rechenzeit nur das Modell:
+
+| Abschnitt | Anzahl | Rechenzeit | Spitze | davon MLX |
+| --- | --- | --- | --- | --- |
+| 15 s | 18 | 25 s | 3,6 GB | 2,3 GB |
+| 30 s | 9 | 23 s | 3,9 GB | 2,5 GB |
+| 60 s | 5 | 20 s | 4,0 GB | 2,5 GB |
+| 120 s | 3 | 20 s | 4,2 GB | 2,5 GB |
+| 240 s | 1 | 20 s | 4,4 GB | 2,7 GB |
+
+Die Qualität dazu als Abweichung gegen die Mehrheit der drei Whisper-Fassungen, mit Gegenprobe auf Ausschnitt 2:
+
+| Abschnitt | Ausschnitt 1 | Ausschnitt 2 | Sprecher |
+| --- | --- | --- | --- |
+| 15 s | 16,2 % | nicht gemessen | 2 (einer erfunden) |
+| 30 s | 17,4 % | 25,9 % | 1 |
+| 60 s | 17,1 % | 26,6 % | 1 |
+| 120 s | 17,1 % | nicht gemessen | 1 |
+| 240 s | 14,1 % | 28,5 % | 1 |
+
+Der Speicher bleibt fast flach, von 3,6 auf 4,4 GB bei sechzehnfacher Länge. Der freie Anteil des Systems fiel in
+keinem Lauf unter 82 %, ausgelagert wurde nichts. Was auf Ausschnitt 1 nach einem Gewinn bei 240 s aussah, kehrt sich
+auf Ausschnitt 2 um. Ab 30 s wird die Abschrift also nicht messbar besser.
+
+Eine Falle an den Nähten: Im ersten Zusammenführen kamen bei 15 s ganze Sätze doppelt vor. MOSS beginnt den Vorlauf oft
+mitten im Satz oder zieht ihn mit dem ersten neuen Satz zu einem Beitrag zusammen; ein Schnitt allein nach Zeitmarken
+reicht dann nicht. Erst ein Textabgleich an der Naht (der wiederholte Anfang fällt weg) brachte die Abweichung bei 15 s
+von 19,7 auf 16,2 %.
+
+### Sprachausgabe und Stimmklon mit Qwen3-TTS
+
+<Zeichnung bild={lautsprecher} text="Zeichnung: ein Lautsprecher, aus dem drei Schallwellen kommen" />
+
+Für die Sprachausgabe laufen zwei Fassungen von Qwen3-TTS als eigene Dienste, beide über MLX. Systematisch gemessen
+wurden sie noch nicht; die Zahlen stammen aus der laufenden Speicheraufzeichnung (die letzten 30 Arbeitsspitzen je
+Dienst).
+
+| Modell | Aufgabe | Gewichte | Speicher im Leerlauf | Arbeitsspitzen |
+| --- | --- | --- | --- | --- |
+| Qwen3-TTS 1.7B CustomVoice | Sprechen mit fertigen Stimmen | 8 Bit | 3,38 GB | 3,3 bis 7,5 GB |
+| Qwen3-TTS 1.7B Base | Stimmklon aus einer kurzen Probe | bfloat16 | 4,78 GB | 4,7 bis 11,75 GB |
+
+Erfahrungen aus dem Betrieb:
+
+- **Angemeldet und Wirklichkeit gingen auseinander.** Die Dienste waren mit 3 und 6 GB angemeldet, gebraucht haben sie
+  bis 7,5 und 11,75 GB. Die Anmeldungen stehen jetzt bei 8 und 12 GB, die Grenze für den Stimmklon bei 20 GB.
+- **8 Bit für den Stimmklon liegt bereit** und würde geschätzt rund 1,7 GB Gewichte sparen. Umgestellt wird nur, wenn
+  ein Blindvergleich keinen hörbaren Unterschied zeigt. Speicher ist kein Grund, Klangähnlichkeit zu opfern.
+- **Lange Texte** gehen in Teilen bis 7500 Zeichen an den Sprechdienst und kommen als Strom zurück. In einer Probe
+  begann das Vorlesen einer Karte nach 4,7 s mit dem ersten Satz; das ist ein Einzelwert.
+- **Stimmen sind Auswahl, nicht Freitext.** Der Sprechdienst bietet neun fertige Stimmen. Geklonte Stimmen echter
+  Personen stehen nur Apps zur Wahl, denen sie einzeln freigegeben sind. Eine feste Vorgabestimme im Code gibt es nicht;
+  leer heißt Vorgabe des Sprechdienstes.
+
+### MLX gegen PyTorch auf dem Mac
+
+<Zeichnung bild={chip} text="Zeichnung: zwei Wege, ein gewundener und ein gerader, die zu einem Chip führen" />
+
+Fast alle Sprachdienste laufen hier über MLX. Nur pyannote und ECAPA bleiben auf torch: Beide brauchen wenig Speicher,
+und für pyannote gibt es nur die Segmentierung als MLX-Port, laut
+[Modellkarte](https://huggingface.co/mlx-community/pyannote-segmentation-3.0-mlx) mit 88,6 % Übereinstimmung zum
+Original, also nicht gleichwertig.
+
+| Merkmal | torch auf mps, float32, am Stück | MLX, bfloat16, Abschnitte 30 s |
+| --- | --- | --- |
+| Ton | 7 min | 17:58 min |
+| Spitze Speicher | mindestens 99,6 GB, aufgezeichnet 133,5 GB | 3,9 GB |
+| Ergebnis | Absturz, keine Abschrift | 7,8-fache Echtzeit |
+| Grenze im Prozess | Vorgaben über dem eingebauten Speicher | `mx.set_memory_limit` auf 90 % der Dienstgrenze |
+
+Was MLX bringt:
+
+- **Speicher, der sich verhält.** Die Umsetzung in mlx-audio lässt den Cache in Blöcken wachsen und rechnet die
+  Eingabe in Stücken von 4096 Token; MLX selbst lässt sich im Prozess hart begrenzen. Von den
+  3,9 GB Spitze entfallen 2,3 bis 2,7 GB auf MLX selbst, der Rest auf den Dienst drumherum.
+- **Den Weg, den die Herkunft für den Mac vorsieht.** Für MOSS-Transcribe-Diarize nennt das Team mlx-audio als
+  Mac-Weg.
+
+Was MLX nicht bringt:
+
+- **Genauigkeit.** MLX rechnet dieselben Gewichte. MOSS über MLX in bfloat16 liegt beim deutschen Text weiter klar
+  hinter Whisper. Die Unterschiede in der Qualität kommen vom Modell und vom Ablauf.
+- **Einen belegten Tempogewinn.** Am selben Modell gibt es keinen Vergleich: Der Lauf mit torch stürzte ab, bevor er
+  ein Ergebnis hatte.
+
+Die Speicherzahlen der Tabelle trennen außerdem nicht sauber: Zwischen den beiden Läufen änderten sich Laufzeit,
+Datentyp und Länge je Durchgang auf einmal. Nach der Hochrechnung oben wäre auch torch in kurzen Abschnitten weit
+unter 100 GB geblieben. Der Gewinn ist die Kombination.
+
+## Grenzen und offene Fragen
+
+- **Keine von Hand berichtigte Referenz.** Die Abweichung ist keine Wortfehlerrate. Strittige Stellen gibt es 13 im
+  ersten Ausschnitt und 67 in der ganzen Aufnahme 1; nachgehört sind sie nicht alle.
+- **Eine Aufnahme mit einem Sprecher** für die Erkennung. Ob 8 Bit auch auf anderen Aufnahmen gleichauf liegt, ist
+  offen; die Vorgabe bleibt darum Whisper Large V3 in 16 Bit.
+- **Füllwörter.** Ob wörtlich oder geglättet richtig ist, hängt vom Zweck ab. Die Mehrheit bevorzugt hier die
+  geglättete Form.
+- **Sprechertrennung mit MOSS** auf einem Gespräch mit mehreren Personen ist noch nicht gemessen, ebenso die Mischung
+  aus Whisper-Text und MOSS-Sprechern.
+- **Qwen3-TTS** ist nur im Betrieb beobachtet, nicht unter festen Bedingungen gemessen.
+- **Deutsch bei MOSS.** Veröffentlichte Messwerte für Deutsch gibt es nicht; laut Team gehört Deutsch zu den Sprachen
+  mit den meisten Trainingsdaten ([Fehlerbericht 8](https://github.com/OpenMOSS/MOSS-Transcribe-Diarize/issues/8)).
+- **Vorlauf.** Ein Abschnitt hört samt Vorlauf bis zu 10 s mehr als seine Obergrenze. Für den Speicher spielt das keine
+  Rolle, in der Tabelle steht die Obergrenze.
+
+## Erkenntnis
+
+Für deutschen Text ist Whisper Large V3 die sichere Wahl, 8 Bit ist eine ernsthafte Option mit 1,3 GB weniger
+Speicher, Turbo lohnt sich nur, wenn Tempo wichtiger ist als Namen. MOSS-Transcribe-Diarize ist interessant, weil es
+Sprecher im selben Durchgang trennt, schreibt Deutsch aber spürbar schlechter. Für Gespräche bleibt bis zur Messung von
+MOSS allein Whisper mit pyannote der erprobte Weg.
+
+Drei Lehren aus dem Absturz, die für jedes neue Modell gelten:
+
+1. **Erst recherchieren, dann kurz messen.** Welche Fassung sieht die Herkunft für den Mac vor, welchen Datentyp, wie
+   lang darf ein Durchgang sein? Danach ein Lauf von 15 s unter Aufsicht (hier: 3,1 GB samt Laden), dann stufenweise
+   länger, mit festen Abbruchregeln.
+2. **Abschnitte an Sprechpausen.** Nie an fester Zeit schneiden, sondern in der längsten Pause vor der Obergrenze. Das
+   hält den Speicher flach und die Sätze ganz. Bei MOSS reichen 30 s; länger wird es nicht besser.
+3. **Eine harte Speichergrenze je Dienst.** Eine Wache misst jede Sekunde, beendet einen Dienst über seiner Grenze
+   sofort und sperrt ihn, auch über einen Neustart hinweg; ein abgebrochener Auftrag startet nicht von selbst neu.
+   Sprachmodelle dürfen hier höchstens 20 GB belegen. Dazu die Grenze im Prozess (MLX: `mx.set_memory_limit`, torch
+   auf mps: `PYTORCH_MPS_HIGH_WATERMARK_RATIO` und `PYTORCH_MPS_LOW_WATERMARK_RATIO`). Ein Gegentest mit einem
+   absichtlich wachsenden Testdienst zeigt, ob das greift: Die alte Fassung ließ ihn weiterlaufen, die neue beendete
+   ihn bei 0,7 GB über einer Grenze von 0,5 GB.
+
+Und für Messungen selbst: auf ruhigem Rechner messen, und keine stillen Rückfälle. Ein Ersatzweg, der ohne Meldung
+einspringt, hat hier den Lauf mit MOSS allein entwertet.
+
+> Der größte Gewinn kam nicht vom Modell, sondern vom Ablauf: Fachwörter als Hinweis, Schnitte nur in Sprechpausen und
+> eine harte Speichergrenze je Dienst. Damit wird aus einem Modell, das am Stück über 100 GB belegte, ein Dienst mit
+> 4 GB.
