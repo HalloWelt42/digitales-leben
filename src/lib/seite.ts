@@ -4,6 +4,7 @@
 export const SEITE = {
   name: "KI-Wissen",
   kurzname: "KI-Wissen",
+  leitsatz: "aus der echten Praxis",
   beschreibung:
     "Artikel rund um KI: Grundlagen, Modelle und Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche.",
   sprache: "de",

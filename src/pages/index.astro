@@ -12,7 +12,7 @@ const zuletzt = artikel.map(letzteAenderung).sort((a, b) => b.getTime() - a.getT
 ---
 
 <Grundgeruest>
-  <Seitenkopf pfad={[{ name: "Artikel" }]} titel={SEITE.name} gross>
+  <Seitenkopf pfad={[{ name: "Artikel" }]} titel={SEITE.name} unterzeile={SEITE.leitsatz} gross>
     <p slot="einleitung">
       Artikel rund um KI: Grundlagen, Modelle und Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche.
       Stellt sich später etwas anders heraus, steht es als Nachtrag mit Datum dabei.

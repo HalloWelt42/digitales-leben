@@ -7,10 +7,12 @@ interface Props {
   pfad: PfadTeil[];
   titel: string;
   etikett?: string;
+  /** kurze Zeile direkt unter dem Titel, etwa der Leitsatz der Seite */
+  unterzeile?: string;
   gross?: boolean;
 }
 
-const { pfad, titel, etikett, gross = false } = Astro.props;
+const { pfad, titel, etikett, unterzeile, gross = false } = Astro.props;
 const mitEinleitung = Astro.slots.has("einleitung");
 const mitAngaben = Astro.slots.has("angaben");
 ---
@@ -21,6 +23,7 @@ const mitAngaben = Astro.slots.has("angaben");
     <div class="titel">
       {etikett && <p class="etikett">{etikett}</p>}
       <h1 class:list={{ gross }}>{titel}</h1>
+      {unterzeile && <p class="unterzeile">{unterzeile}</p>}
     </div>
     {mitEinleitung && <div class="einleitung"><slot name="einleitung" /></div>}
   </div>
@@ -48,6 +51,13 @@ const mitAngaben = Astro.slots.has("angaben");
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       align-items: end;
     }
+  }
+
+  .unterzeile {
+    margin-top: 0.4rem;
+    font-family: var(--schrift-mono);
+    font-size: clamp(1.05rem, 0.95rem + 0.6vw, 1.4rem);
+    color: var(--akzent);
   }
 
   .titel .etikett {
