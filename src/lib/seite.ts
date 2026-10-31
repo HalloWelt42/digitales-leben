@@ -5,7 +5,7 @@ export const SEITE = {
   name: "KI-Wissen",
   kurzname: "KI-Wissen",
   beschreibung:
-    "Messergebnisse und Erkenntnisse aus der eigenen Arbeit mit KI-Modellen: was sie können, wie schnell sie sind und was sich im Alltag bewährt.",
+    "Artikel rund um KI: Grundlagen, Modelle und Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche.",
   sprache: "de",
   farbe: { dunkel: "#1d1b18", hell: "#faf8f4" },
 } as const;
