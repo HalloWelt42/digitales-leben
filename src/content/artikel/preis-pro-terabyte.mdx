@@ -1,0 +1,131 @@
+---
+titel: "Preis pro Terabyte: eine Browser-Erweiterung, geprüft an 910 echten Angeboten"
+art: erfahrung
+frage: "Wie zuverlässig lässt sich der Preis pro Einheit aus Produkttiteln eines Online-Shops lesen, und was bringt es, ein mit KI gebautes Werkzeug an echten Daten zu prüfen statt an ausgedachten Beispielen?"
+zusammenfassung: "Eine kleine Browser-Erweiterung schreibt in einem Online-Shop unter jeden Preis den Preis pro Terabyte, Liter, Kilogramm oder Waschladung und sortiert die Angebote danach. Gebaut mit einem KI-Assistenten an einem Abend, zuverlässig erst durch 910 echte Suchtreffer als Prüfstein. Dazu die Fallen der Mengenerkennung und warum selbst der Grundpreis des Shops manchmal falsch ist."
+bild: "./preis-pro-terabyte.jpg"
+bildtext: "Illustration: drei schlichte Festplatten ohne Logo mit leeren Preisschildern, daneben eine Waage, deren linke Schale tiefer hängt"
+datum: 2026-10-31
+schlagworte:
+  thema: ["Werkzeuge", "Browser-Erweiterung", "Datenqualität", "Programmieren mit KI"]
+  modell: []
+  faehigkeit: ["Programmieren", "Testen"]
+  geraet: []
+nachtraege: []
+---
+
+Wer Festplatten kauft, vergleicht eigentlich nicht Preise, sondern Preise pro Terabyte. Der Shop zeigt aber 150,99 €
+für 2 TB, 434,99 € für 10 TB und 579,99 € für 22 TB, und das Rechnen bleibt beim Käufer. Bei Lebensmitteln gibt es
+dafür den Grundpreis, bei Speicher, Waschmittel pro Waschladung oder Spültabs pro Stück nicht. Also habe ich mir eine
+kleine Browser-Erweiterung bauen lassen, die genau das erledigt: unter jedem Preis der Einheitspreis, farbig nach
+Abstand zum günstigsten Angebot, und eine Liste, die alle Angebote einer Seite danach sortiert.
+
+Gebaut habe ich sie mit einem KI-Assistenten, an einem Abend von der ersten Nachricht bis zur ersten Fassung.
+Spannend war dabei weniger das Bauen als die Frage, wie man sich auf die Zahlen verlassen kann.
+
+**Das Wichtigste in Kürze**
+
+- **Der Preis pro Einheit** steht direkt unter jedem Preis, mit der erkannten Menge ("5 x 32 GB"), damit jede Zahl
+  nachprüfbar ist. Auf Produktseiten bekommt jede Größe ihren eigenen Wert.
+- **Zuverlässig wurde die Erkennung erst an echten Daten:** 910 Suchtreffer aus 14 Suchen, von Festplatten über
+  Olivenöl bis Katzenfutter. Jede Runde gegen diese Daten hat Fehler gefunden, die kein ausgedachtes Beispiel gezeigt
+  hätte.
+- **Die typischen Fallen** sind Raten ("180 TB/Jahr"), Grenzwerte ("bis zu 24 TB"), Nebenangaben ("256 MB Cache"),
+  Faktoren ohne Leerzeichen ("12x0,5l") und Packungsangaben, die schon in der Menge stecken.
+- **Der Grundpreis des Shops** ist der beste Prüfstein, aber nicht unfehlbar: 0,01 € pro Liter Mineralwasser und
+  574,57 € pro Liter Olivenöl standen genau so in den Suchtreffern.
+- **Die Erweiterung ist offen** und liegt auf GitHub:
+  [HalloWelt42/einheitspreis](https://github.com/HalloWelt42/einheitspreis).
+
+## Ausgangslage
+
+![Produktseite des neutralen Shops Kaufzon: unter jeder Größe der Preis pro TB, 10 TB ist mit 43,50 € pro TB am günstigsten](./preis-pro-terabyte-produktseite.webp)
+
+Das Ziel war klar umrissen: Preis pro GB oder TB bei Festplatten, dazu Preis pro Liter und andere Einheiten, alles
+zuverlässig, und so gebaut, dass es sich ohne Umweg in den eigenen Browser laden lässt. Die Bilder in diesem Artikel
+zeigen einen neutralen Nachbau namens Kaufzon, auf dem die echte Erweiterung läuft. Die Preise stammen aus einer
+echten Suche.
+
+Auf der Produktseite sieht man, worum es geht: die 6-TB-Platte kostet 278,99 €, also 46,50 € pro TB. Die 10-TB-Platte
+kostet mehr, ist mit 43,50 € pro TB aber die günstigste Größe. Das sieht man dem Preis nicht an.
+
+## Was passiert ist
+
+### Erst den Aufbau der Seite lesen
+
+Bevor eine Zeile Code entstand, hat der Assistent im Browser den Aufbau der Shopseiten gelesen: wo Titel und Preis
+eines Suchtreffers stehen, wie die Größenkacheln einer Produktseite aufgebaut sind, welcher Preis der zu zahlende ist
+und welcher der durchgestrichene Vergleichspreis, und wo der Shop bei Lebensmitteln seinen eigenen Grundpreis zeigt.
+Das alles kennt in der Erweiterung genau eine Datei. Ändert der Shop seinen Aufbau, ist nur sie betroffen.
+
+### Ein Rechenkern ohne Browser
+
+Die eigentliche Arbeit, Menge und Einheit aus einem Text wie "NAS-Festplatte 4 TB, 3,5 Zoll, 180 TB/Jahr" zu lesen,
+steckt in einem Rechenkern ohne jede Browser-Schnittstelle. Er lässt sich deshalb im Terminal gegen beliebig viele
+Titel laufen lassen, in Sekunden und ohne den Browser zu öffnen.
+
+### Echte Titel als Prüfstein
+
+Statt sich Testfälle auszudenken, hat der Assistent 14 Suchen mit je zwei Ergebnisseiten abgerufen und die Titel,
+Preise und, wo vorhanden, den Grundpreis des Shops gesammelt: 910 verschiedene Angebote, 653 davon mit Grundpreis.
+Ausgewertet wurde in zwei Richtungen:
+
+- **Speicher:** Wo kommt ein absurder Preis pro TB heraus, wo gar keiner?
+- **Alles andere:** Wo weicht die eigene Rechnung vom Grundpreis des Shops ab?
+
+Jede Runde fand etwas. Die Auswahl:
+
+| Titel (gekürzt) | Fehler | Ursache |
+|---|---|---|
+| "... Pro 8TB, 256 MB Cache" | 1.472.656 € pro TB | "pro" galt als Grenzwort wie in "pro Stück", die 8 TB fielen weg, übrig blieb der Cache |
+| "Externe Festplatte,2TB" | keine Menge | eine Zahl direkt nach einem Komma galt als Nachkommastelle |
+| "Waschpulver 3x10 kg" | keine Menge | eine Zahl direkt nach einem Buchstaben wurde verworfen, auch nach dem "x" eines Faktors |
+| "1000 ml (3 x 1,0 l)" | 41,87 € statt 13,96 € pro Liter | die erste Angabe zählte statt der größten |
+| "2 kg (2 Packungen mit 1 kg)" | halber Preis pro kg | die Packungszahl wurde noch einmal mit der Gesamtmenge malgenommen |
+| "(5L/100 Waschladungen)" | keine Menge | jeder Schrägstrich nach einer Einheit galt als Rate wie "MB/s" |
+| "1.595 lt." | 1595 Liter | Tausenderpunkt und Dezimalpunkt sehen gleich aus |
+
+Nach den Korrekturen stimmte die eigene Rechnung bei 465 der 653 Angebote mit Grundpreis auf 2 % genau mit dem Shop
+überein. Der Rest sind überwiegend keine Fehler, sondern Absicht, dazu gleich mehr. Am Ende standen 37 automatische
+Tests, darunter einer, der alle 910 Titel auf einen plausiblen Preis pro TB prüft.
+
+### Wenn der Shop selbst falsch rechnet
+
+Der Grundpreis des Shops ist die verlässlichste Quelle, wo es ihn gibt, und die Erweiterung nimmt ihn dann. Unfehlbar
+ist er nicht: Zwölf Flaschen Mineralwasser mit 0,75 l wurden mit "700 l" angegeben und kosteten so 0,01 € pro Liter,
+eine Flasche Olivenöl stand mit 574,57 € pro Liter in der Liste. Solche Ausreißer fallen erst auf, wenn man zwei
+unabhängige Rechnungen nebeneinanderlegt.
+
+### Die Liste
+
+![Suchergebnisse im neutralen Shop Kaufzon mit geöffneter Vergleichsliste, sortiert nach Preis pro TB](./preis-pro-terabyte-suche.webp)
+
+Auf einer Suchseite zeigt ein Knopf unten rechts den besten Preis pro Einheit. Ein Klick öffnet die Liste aller
+Angebote der Seite, günstigster Einheitspreis zuerst, ein Klick auf eine Zeile springt zum Angebot. Im Bild steht die
+4-TB-Platte mit "180 TB/Jahr" im Titel richtig bei 53,00 € pro TB und nicht bei 1,18 € pro TB, und die USB-Sticks
+werden als "5 x 32 GB" gerechnet.
+
+Der erste gemeinsame Test im echten Shop brachte genau einen Wunsch: die Schilder eine Spur kleiner.
+
+## Was sich bewährt hat
+
+- **Echte Daten statt ausgedachter Beispiele.** Ein Titel wie "Externe Festplatte,2TB" schreibt niemand in einen
+  Test, im Shop steht er trotzdem. Die 910 Titel liegen jetzt dauerhaft als Prüfstein bei den Tests.
+- **Zwei unabhängige Rechnungen vergleichen.** Die eigene Rechnung gegen den Grundpreis des Shops zu halten, hat
+  Fehler auf beiden Seiten gezeigt.
+- **Die erkannte Menge immer mit anzeigen.** "5 x 32 GB" unter dem Preis macht jede Zahl nachprüfbar. Ein falscher
+  Wert fällt so sofort auf, statt still eine falsche Reihenfolge zu erzeugen.
+- **Die bessere Einheit bewusst wählen.** Für Waschmittel ist der Preis pro Waschladung aussagekräftiger als der pro
+  Liter, weil Konzentrate verschieden ergiebig sind; für Spültabs der Preis pro Tab. Hier rechnet die Erweiterung
+  selbst, auch wenn der Shop einen Grundpreis pro Liter oder Kilogramm angibt. Daher stammt der größte Teil der
+  Abweichungen oben.
+- **Den Rechenkern vom Seitenaufbau trennen.** Nur so ließ sich die Erkennung in Sekunden gegen alle Titel prüfen.
+
+## Was ich anders machen würde
+
+- **Die Sammlung echter Daten an den Anfang stellen.** Hier kam sie nach dem ersten Entwurf des Rechenkerns. Früher
+  gesammelt, hätte sie den ersten Entwurf schon geformt.
+- **Mehrdeutiges offen lassen statt raten.** Bei "12x85g (4 Packungen)" ist unklar, ob es 12 oder 48 Beutel sind. Wo
+  der Shop einen Grundpreis zeigt, gilt seiner. Ohne ihn wäre ein sichtbares Fragezeichen ehrlicher als eine Zahl.
+- **Offen ist noch**, wie oft der Shop seinen Seitenaufbau ändert. Die Erweiterung liest ihn an einer einzigen Stelle,
+  aber wie lange diese Stelle hält, zeigt erst die Zeit.
