@@ -1,0 +1,44 @@
+---
+// Alle Artikel zu einem Schlagwort, etwa /schlagworte/modell/<kennung>/
+import Grundgeruest from "../../../layouts/Grundgeruest.astro";
+import Seitenkopf from "../../../components/Seitenkopf.astro";
+import ArtikelListe from "../../../components/ArtikelListe.astro";
+import { schlagwortArt } from "../../../lib/aufbau";
+import { alleArtikel, sammleSchlagworte, type Schlagwort } from "../../../lib/artikel";
+
+export async function getStaticPaths() {
+  const gesammelt = sammleSchlagworte(await alleArtikel());
+  return [...gesammelt.values()].flat().map((schlagwort) => ({
+    params: { art: schlagwort.art, kennung: schlagwort.kennung },
+    props: { schlagwort },
+  }));
+}
+
+interface Props {
+  schlagwort: Schlagwort;
+}
+
+const { schlagwort } = Astro.props;
+const art = schlagwortArt(schlagwort.art);
+---
+
+<Grundgeruest titel={`${schlagwort.wert} (${art.name})`} beschreibung={`Alle Artikel zum ${art.name} ${schlagwort.wert}.`}>
+  <Seitenkopf
+    pfad={[{ name: "Schlagworte", weg: "/schlagworte/" }, { name: art.mehrzahl, weg: `/schlagworte/#${art.schluessel}` }, { name: schlagwort.wert }]}
+    titel={schlagwort.wert}
+    etikett={art.name}
+  >
+    <Fragment slot="angaben">
+      <span>{schlagwort.artikel.length} Artikel</span>
+    </Fragment>
+  </Seitenkopf>
+  <div class="liste">
+    <ArtikelListe artikel={schlagwort.artikel} nachJahren={false} />
+  </div>
+</Grundgeruest>
+
+<style>
+  .liste {
+    padding-bottom: var(--abstand-gross);
+  }
+</style>

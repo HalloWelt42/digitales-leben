@@ -1,0 +1,97 @@
+---
+// Suche über alle Artikel, ganz im Browser (Index: suchindex.json, Ablauf: skripte/suche.ts)
+import Grundgeruest from "../layouts/Grundgeruest.astro";
+import Seitenkopf from "../components/Seitenkopf.astro";
+import { pfad } from "../lib/pfad";
+---
+
+<Grundgeruest titel="Suche" beschreibung="Alle Artikel durchsuchen: Titel, Frage, Schlagworte und Text.">
+  <Seitenkopf pfad={[{ name: "Suche" }]} titel="Suche" />
+  <div class="suche">
+    <form data-suche data-index={pfad("/suchindex.json")} role="search">
+      <label class="etikett" for="suchbegriff">Suchbegriff</label>
+      <input id="suchbegriff" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="etwa Whisper oder Echtzeit" />
+    </form>
+    <p class="meldung angabe" data-meldung aria-live="polite">Durchsucht Titel, Frage, Schlagworte und Text aller Artikel.</p>
+    <noscript><p class="meldung angabe">Die Suche braucht eingeschaltetes JavaScript.</p></noscript>
+    <ol class="treffer" data-treffer></ol>
+  </div>
+</Grundgeruest>
+
+<script>
+  import "../skripte/suche";
+</script>
+
+<style>
+  .suche {
+    max-width: var(--breite-text);
+    padding-block: 2.5rem var(--abstand-gross);
+  }
+
+  form {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  input {
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--linie);
+    border-bottom: 2px solid var(--text-stark);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--flaeche);
+    color: var(--text-stark);
+    font: 400 1.25rem / 1.3 var(--schrift-text);
+  }
+
+  input::placeholder {
+    color: var(--text-leise);
+  }
+
+  input:focus-visible {
+    outline: none;
+    border-bottom-color: var(--akzent);
+  }
+
+  .meldung {
+    margin-top: 1rem;
+  }
+
+  .treffer {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .treffer :global(li) {
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--linie);
+  }
+
+  .treffer :global(h2) {
+    font-size: 1.4rem;
+  }
+
+  .treffer :global(h2 a) {
+    color: var(--text-stark);
+    text-decoration: none;
+  }
+
+  .treffer :global(h2 a:hover) {
+    text-decoration: underline;
+    text-decoration-color: var(--akzent);
+  }
+
+  .treffer :global(.auszug) {
+    margin-block: 0.45rem;
+    color: var(--text);
+  }
+
+  .treffer :global(mark) {
+    padding: 0 0.1em;
+    border-radius: 2px;
+    background: var(--markierung);
+    color: var(--text-stark);
+  }
+</style>

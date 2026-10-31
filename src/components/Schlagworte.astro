@@ -1,0 +1,62 @@
+---
+// Schlagworte eines Artikels als Verweise auf ihre Übersichtsseiten; die Art steht im Hinweis beim Überfahren.
+import { SCHLAGWORT_ARTEN } from "../lib/aufbau";
+import { schlagwortPfad, type Artikel } from "../lib/artikel";
+
+interface Props {
+  artikel: Artikel;
+}
+
+const { schlagworte } = Astro.props.artikel.data;
+const eintraege = SCHLAGWORT_ARTEN.flatMap((a) => schlagworte[a.schluessel].map((wert) => ({ art: a, wert })));
+---
+
+{
+  eintraege.length > 0 && (
+    <ul class="schlagworte">
+      {eintraege.map(({ art, wert }) => (
+        <li>
+          <a href={schlagwortPfad(art.schluessel, wert)} title={`${art.name}: alle Artikel zu ${wert}`} data-art={art.schluessel}>
+            {wert}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .schlagworte {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--linie);
+    border-radius: 999px;
+    color: var(--text);
+    font-family: var(--schrift-mono);
+    font-size: var(--groesse-etikett);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  a:hover {
+    border-color: var(--akzent);
+    color: var(--text-stark);
+  }
+
+  a[data-art="modell"] {
+    border-color: color-mix(in srgb, var(--akzent) 45%, transparent);
+  }
+
+  a[data-art="geraet"] {
+    border-color: color-mix(in srgb, var(--knopf) 45%, transparent);
+  }
+</style>

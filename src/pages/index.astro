@@ -1,0 +1,56 @@
+---
+// Startseite: Titel mit Einleitung, Angaben zum Bestand und alle Artikel nach Jahren
+import Grundgeruest from "../layouts/Grundgeruest.astro";
+import Seitenkopf from "../components/Seitenkopf.astro";
+import ArtikelListe from "../components/ArtikelListe.astro";
+import { SEITE } from "../lib/seite";
+import { alleArtikel, letzteAenderung } from "../lib/artikel";
+import { datumIso, datumText } from "../lib/datum";
+
+const artikel = await alleArtikel();
+const zuletzt = artikel.map(letzteAenderung).sort((a, b) => b.getTime() - a.getTime())[0];
+---
+
+<Grundgeruest>
+  <Seitenkopf pfad={[{ name: "Artikel" }]} titel={SEITE.name} gross>
+    <p slot="einleitung">
+      Was wir an KI-Modellen gemessen, verglichen und im Alltag ausprobiert haben: mit Aufbau, Zahlen und dem, was
+      daraus folgt. Stellt sich später etwas anders heraus, steht es als Nachtrag mit Datum dabei.
+    </p>
+    <Fragment slot="angaben">
+      <span>{artikel.length} Artikel</span>
+      {zuletzt && <span>Zuletzt am <time datetime={datumIso(zuletzt)}>{datumText(zuletzt)}</time></span>}
+    </Fragment>
+  </Seitenkopf>
+
+  <section class="abschnitt" aria-labelledby="alle">
+    <p class="etikett" id="alle">Alle Artikel</p>
+    {
+      artikel.length > 0 ? (
+        <div class="liste">
+          <ArtikelListe artikel={artikel} />
+        </div>
+      ) : (
+        <p class="leer">Noch keine Artikel veröffentlicht.</p>
+      )
+    }
+  </section>
+</Grundgeruest>
+
+<style>
+  .abschnitt {
+    border-top: 0;
+    padding-top: 1.5rem;
+  }
+
+  .liste {
+    margin-top: 1rem;
+  }
+
+  .leer {
+    margin-top: 1rem;
+    padding-block: 2rem;
+    border-top: 2px solid var(--text-stark);
+    color: var(--text-leise);
+  }
+</style>

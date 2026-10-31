@@ -1,0 +1,86 @@
+---
+// Fuß jeder Seite: Wortmarke mit Beschreibung, Übersicht, Schlagwort-Arten und die Fassung aus version.json
+import Marke from "./Marke.astro";
+import { NAVIGATION, SEITE } from "../lib/seite";
+import { SCHLAGWORT_ARTEN } from "../lib/aufbau";
+import { FASSUNG } from "../lib/fassung";
+import { pfad } from "../lib/pfad";
+---
+
+<footer class="fuss">
+  <div class="rahmen rahmen-linien">
+    <div class="spalten">
+      <div class="ueber">
+        <Marke />
+        <p>{SEITE.beschreibung}</p>
+      </div>
+      <nav aria-label="Übersicht">
+        <p class="etikett">Übersicht</p>
+        <ul>{NAVIGATION.map((e) => <li><a href={pfad(e.weg)}>{e.name}</a></li>)}</ul>
+      </nav>
+      <nav aria-label="Schlagworte">
+        <p class="etikett">Schlagworte</p>
+        <ul>
+          {SCHLAGWORT_ARTEN.map((a) => <li><a href={pfad(`/schlagworte/#${a.schluessel}`)}>{a.mehrzahl}</a></li>)}
+        </ul>
+      </nav>
+    </div>
+    <p class="angabe angabe-gross unten">Fassung {FASSUNG}</p>
+  </div>
+</footer>
+
+<style>
+  .fuss {
+    border-top: 1px solid var(--linie);
+    background: var(--grund-tief);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .spalten {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    padding-block: 2.5rem;
+  }
+
+  @media (min-width: 760px) {
+    .spalten {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 3rem;
+    }
+  }
+
+  .ueber p {
+    max-width: 30rem;
+    margin-top: 0.9rem;
+    color: var(--text-leise);
+    font-size: var(--groesse-klein);
+  }
+
+  ul {
+    margin: 0.8rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    margin-top: 0.35rem;
+  }
+
+  nav a {
+    color: var(--text);
+    font-size: var(--groesse-klein);
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--text-stark);
+    text-decoration: underline;
+  }
+
+  .unten {
+    margin: 0;
+    padding-block: 1.1rem;
+    border-top: 1px solid var(--linie-zart);
+  }
+</style>

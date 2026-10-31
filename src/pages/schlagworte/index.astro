@@ -1,0 +1,95 @@
+---
+// Übersicht aller Schlagworte, je Art ein Abschnitt (Modelle, Fähigkeiten, Geräte) mit der Zahl der Artikel
+import Grundgeruest from "../../layouts/Grundgeruest.astro";
+import Seitenkopf from "../../components/Seitenkopf.astro";
+import { SCHLAGWORT_ARTEN } from "../../lib/aufbau";
+import { alleArtikel, sammleSchlagworte, schlagwortPfad } from "../../lib/artikel";
+
+const gesammelt = sammleSchlagworte(await alleArtikel());
+const arten = SCHLAGWORT_ARTEN.map((art) => ({ art, schlagworte: gesammelt.get(art.schluessel) ?? [] }));
+---
+
+<Grundgeruest titel="Schlagworte" beschreibung="Alle Artikel nach Modell, Fähigkeit und Gerät.">
+  <Seitenkopf pfad={[{ name: "Schlagworte" }]} titel="Schlagworte">
+    <p slot="einleitung">Jeder Artikel trägt Schlagworte für das gemessene Modell, die Fähigkeit und das Gerät, auf dem gemessen wurde.</p>
+    <Fragment slot="angaben">
+      {arten.map((a) => <a href={`#${a.art.schluessel}`}>{a.schlagworte.length} {a.schlagworte.length === 1 ? a.art.name : a.art.mehrzahl}</a>)}
+    </Fragment>
+  </Seitenkopf>
+
+  <div class="arten">
+    {
+      arten.map(({ art, schlagworte }) => (
+        <section id={art.schluessel} aria-labelledby={`titel-${art.schluessel}`}>
+          <p class="etikett">{art.mehrzahl}</p>
+          <h2 id={`titel-${art.schluessel}`} class="nur-vorleser">{art.mehrzahl}</h2>
+          {schlagworte.length > 0 ? (
+            <ul>
+              {schlagworte.map((s) => (
+                <li>
+                  <a href={schlagwortPfad(art.schluessel, s.wert)}>{s.wert}</a>
+                  <span class="angabe">{s.artikel.length}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="leer">Noch keine.</p>
+          )}
+        </section>
+      ))
+    }
+  </div>
+</Grundgeruest>
+
+<style>
+  .arten {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem 3rem;
+    padding-block: 2.5rem var(--abstand-gross);
+    border-top: 1px solid var(--linie);
+  }
+
+  @media (min-width: 900px) {
+    .arten {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  ul {
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--text-stark);
+  }
+
+  li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.7rem;
+    border-bottom: 1px solid var(--linie);
+  }
+
+  li a {
+    min-width: 0;
+    color: var(--text-stark);
+    font-family: var(--schrift-titel);
+    font-size: 1.25rem;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+
+  li a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--akzent);
+  }
+
+  .leer {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--text-stark);
+    color: var(--text-leise);
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+// Kopf einer Seite unter der Kopfleiste: Pfadzeile, großer Titel in Serifenschrift, rechts daneben eine Einleitung
+// (Platz "einleitung") und darunter eine Zeile mit Angaben (Platz "angaben").
+import Pfadzeile, { type PfadTeil } from "./Pfadzeile.astro";
+
+interface Props {
+  pfad: PfadTeil[];
+  titel: string;
+  etikett?: string;
+  gross?: boolean;
+}
+
+const { pfad, titel, etikett, gross = false } = Astro.props;
+const mitEinleitung = Astro.slots.has("einleitung");
+const mitAngaben = Astro.slots.has("angaben");
+---
+
+<header class:list={["seitenkopf", { "mit-einleitung": mitEinleitung }]}>
+  <Pfadzeile teile={pfad} />
+  <div class="zeile">
+    <div class="titel">
+      {etikett && <p class="etikett">{etikett}</p>}
+      <h1 class:list={{ gross }}>{titel}</h1>
+    </div>
+    {mitEinleitung && <div class="einleitung"><slot name="einleitung" /></div>}
+  </div>
+  {mitAngaben && <div class="angaben angabe angabe-gross"><slot name="angaben" /></div>}
+</header>
+
+<style>
+  .seitenkopf {
+    padding-block: 2rem 1.75rem;
+  }
+
+  .zeile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem 3rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .seitenkopf {
+      padding-block: 3rem 2.25rem;
+    }
+
+    .mit-einleitung .zeile {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: end;
+    }
+  }
+
+  .titel .etikett {
+    margin-bottom: 0.6rem;
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 1.4rem + 3vw, 3.6rem);
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  h1.gross {
+    font-size: clamp(3.2rem, 2rem + 6vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  .einleitung {
+    color: var(--text);
+    font-size: 1.1875rem;
+    line-height: 1.6;
+  }
+
+  .angaben {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.75rem;
+    margin-top: 1.75rem;
+    padding-top: 0.9rem;
+    border-top: 2px solid var(--text-stark);
+  }
+</style>

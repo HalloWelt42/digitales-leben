@@ -1,0 +1,272 @@
+---
+// Ein Artikel: Frage, Inhalt (Aufbau der Messung, Ergebnisse, Erkenntnis) und Nachträge mit Datum.
+// Daneben ab großer Breite das Inhaltsverzeichnis und die Schlagworte nach Art.
+import { render } from "astro:content";
+import Grundgeruest from "../../layouts/Grundgeruest.astro";
+import Seitenkopf from "../../components/Seitenkopf.astro";
+import { SCHLAGWORT_ARTEN, nachtragArt } from "../../lib/aufbau";
+import { alleArtikel, lesezeit, nachtraege, schlagwortPfad, type Artikel } from "../../lib/artikel";
+import { datumIso, datumText } from "../../lib/datum";
+
+export async function getStaticPaths() {
+  return (await alleArtikel()).map((artikel) => ({ params: { id: artikel.id }, props: { artikel } }));
+}
+
+interface Props {
+  artikel: Artikel;
+}
+
+const { artikel } = Astro.props;
+const { data } = artikel;
+const { Content, headings } = await render(artikel);
+const kapitel = headings.filter((h) => h.depth === 2);
+const liste = nachtraege(artikel);
+
+// Ein Nachtrag, der auf einen Abschnitt verweist, muss ihn auch treffen; sonst bricht der Bau mit klarer Meldung ab
+const ueberschrift = (kennung: string) => headings.find((h) => h.slug === kennung);
+for (const n of liste) {
+  if (n.abschnitt && !ueberschrift(n.abschnitt)) {
+    const bekannt = headings.map((h) => h.slug).join(", ");
+    throw new Error(`${artikel.id}: Nachtrag vom ${datumText(n.datum)} verweist auf Abschnitt "${n.abschnitt}"; vorhanden: ${bekannt}`);
+  }
+}
+const schlagwortGruppen = SCHLAGWORT_ARTEN.map((a) => ({ art: a, werte: data.schlagworte[a.schluessel] })).filter((g) => g.werte.length);
+---
+
+<Grundgeruest titel={data.titel} beschreibung={data.zusammenfassung} art="article">
+  <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={data.entwurf ? "Entwurf, nicht veröffentlicht" : undefined}>
+    <Fragment slot="angaben">
+      <span><time datetime={datumIso(data.datum)}>{datumText(data.datum)}</time></span>
+      <span>{lesezeit(artikel)} Min Lesezeit</span>
+      {
+        liste.length > 0 && (
+          <a href="#nachtraege">
+            {liste.length} {liste.length === 1 ? "Nachtrag" : "Nachträge"}, zuletzt {datumText(liste.at(-1)!.datum)}
+          </a>
+        )
+      }
+    </Fragment>
+  </Seitenkopf>
+
+  <div class="koerper">
+    <article class="inhalt">
+      <section class="frage" aria-labelledby="frage">
+        <p class="etikett" id="frage">Die Frage</p>
+        <p class="frage-text">{data.frage}</p>
+      </section>
+
+      <Content />
+
+      {
+        liste.length > 0 && (
+          <section class="nachtraege" aria-labelledby="nachtraege">
+            <h2 id="nachtraege">Nachträge</h2>
+            <ol>
+              {liste.map((n) => (
+                <li data-art={n.art}>
+                  <p class="kopfzeile angabe angabe-gross">
+                    <time datetime={datumIso(n.datum)}>{datumText(n.datum)}</time>
+                    <span class="art">{nachtragArt(n.art).name}</span>
+                    {n.abschnitt && <a href={`#${n.abschnitt}`}>betrifft: {ueberschrift(n.abschnitt)!.text}</a>}
+                  </p>
+                  <p>{n.text}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )
+      }
+    </article>
+
+    <aside class="seitenleiste">
+      {
+        kapitel.length > 0 && (
+          <nav class="verzeichnis" aria-labelledby="verzeichnis">
+            <p class="etikett-zeile">
+              <span class="etikett" id="verzeichnis">Inhalt</span>
+              <span class="angabe">{kapitel.length} Kapitel</span>
+            </p>
+            <ol>
+              {kapitel.map((h, i) => (
+                <li>
+                  <span class="nummer angabe">{String(i + 1).padStart(2, "0")}</span>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+              {liste.length > 0 && (
+                <li>
+                  <span class="nummer angabe">+</span>
+                  <a href="#nachtraege">Nachträge</a>
+                </li>
+              )}
+            </ol>
+          </nav>
+        )
+      }
+      {
+        schlagwortGruppen.length > 0 && (
+          <div class="schlagwort-gruppen">
+            {schlagwortGruppen.map((g) => (
+              <div>
+                <p class="etikett">{g.art.mehrzahl}</p>
+                <ul>
+                  {g.werte.map((w) => (
+                    <li>
+                      <a href={schlagwortPfad(g.art.schluessel, w)}>{w}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )
+      }
+    </aside>
+  </div>
+</Grundgeruest>
+
+<style>
+  .koerper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3rem;
+    padding-block: 2.5rem var(--abstand-gross);
+    border-top: 1px solid var(--linie);
+  }
+
+  @media (min-width: 1100px) {
+    .koerper {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
+      gap: 4rem;
+    }
+
+    .seitenleiste {
+      position: sticky;
+      top: calc(var(--kopf-hoehe) + 2rem);
+      align-self: start;
+      padding-left: 2rem;
+      border-left: 1px solid var(--linie);
+    }
+  }
+
+  .frage {
+    padding: 1.1rem 1.25rem 1.25rem;
+    border-left: 3px solid var(--akzent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background: var(--flaeche);
+  }
+
+  .frage-text {
+    margin-top: 0.5rem;
+    color: var(--text-stark);
+    font-family: var(--schrift-titel);
+    font-size: clamp(1.3rem, 1.15rem + 0.6vw, 1.6rem);
+    line-height: 1.3;
+  }
+
+  .nachtraege ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nachtraege li {
+    padding-block: 1rem;
+    border-top: 1px solid var(--linie);
+  }
+
+  .nachtraege li + li {
+    margin-top: 0;
+  }
+
+  .kopfzeile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .nachtraege [data-art="korrektur"] .art {
+    color: var(--akzent);
+  }
+
+  .nachtraege [data-art="erweiterung"] .art {
+    color: var(--verweis);
+  }
+
+  .kopfzeile a {
+    color: var(--text-leise);
+  }
+
+  /* Seitenleiste: Inhaltsverzeichnis nur ab großer Breite; am Telefon stehen die Schlagworte unter dem Artikel */
+  .verzeichnis {
+    display: none;
+  }
+
+  @media (min-width: 1100px) {
+    .verzeichnis {
+      display: block;
+      margin-bottom: 2.5rem;
+    }
+  }
+
+  .etikett-zeile {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 0.75rem;
+  }
+
+  .verzeichnis ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .verzeichnis li {
+    display: grid;
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+    padding-block: 0.4rem;
+  }
+
+  .nummer {
+    padding-top: 0.15rem;
+  }
+
+  .verzeichnis a,
+  .schlagwort-gruppen a {
+    color: var(--text);
+    font-size: var(--groesse-klein);
+    line-height: 1.45;
+    text-decoration: none;
+  }
+
+  .verzeichnis a:hover,
+  .schlagwort-gruppen a:hover {
+    color: var(--text-stark);
+    text-decoration: underline;
+  }
+
+  .schlagwort-gruppen {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--linie);
+  }
+
+  @media (min-width: 1100px) {
+    .schlagwort-gruppen {
+      padding-top: 0;
+      border-top: 0;
+    }
+  }
+
+  .schlagwort-gruppen ul {
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .schlagwort-gruppen li + li {
+    margin-top: 0.25rem;
+  }
+</style>

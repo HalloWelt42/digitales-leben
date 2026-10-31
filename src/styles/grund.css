@@ -1,0 +1,342 @@
+/* Grundstil der Seite: Farben beider Themen, Schriften, Maße und die Gestaltung von Fließtext und Artikelinhalt.
+   Das Thema folgt der Einstellung des Systems; dunkel ist die Vorgabe. Jede Farbe und jedes Maß steht nur hier. */
+
+:root {
+  color-scheme: dark;
+
+  --grund: #1d1b18;
+  --grund-tief: #161412;
+  --flaeche: #26231f;
+  --text: #d9d1c4;
+  --text-stark: #f2ede5;
+  --text-leise: #ada496;
+  --linie: rgb(242 236 226 / 0.15);
+  --linie-zart: rgb(242 236 226 / 0.08);
+  --akzent: #eaa968;
+  --akzent-grund: rgb(234 169 104 / 0.12);
+  --knopf: #93c5ee;
+  --knopf-text: #161412;
+  --verweis: #93c5ee;
+  --markierung: rgb(234 169 104 / 0.28);
+
+  --schrift-titel: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --schrift-text: "Barlow", system-ui, sans-serif;
+  --schrift-mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+
+  --groesse-text: 1.125rem;      /* 18 px Fließtext */
+  --groesse-klein: 0.9375rem;    /* 15 px kleine Texte, nie darunter */
+  --groesse-etikett: 0.875rem;   /* 14 px Etiketten in Großbuchstaben */
+  --sperrung: 0.08em;            /* Buchstabenabstand der Etiketten */
+
+  --breite: 80rem;               /* größte Breite des Rahmens */
+  --breite-text: 46rem;          /* Zeilenlänge im Artikel */
+  --rand: 12px;                  /* Seitenrand am Telefon */
+  --abstand: 1.5rem;
+  --abstand-gross: 3rem;
+  --kopf-hoehe: 3.5rem;
+  --radius: 6px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --grund: #faf8f4;
+    --grund-tief: #f2ede5;
+    --flaeche: #fffefb;
+    --text: #3a342c;
+    --text-stark: #1d1b18;
+    --text-leise: #675f53;
+    --linie: rgb(74 56 30 / 0.2);
+    --linie-zart: rgb(74 56 30 / 0.08);
+    --akzent: #a8470f;
+    --akzent-grund: rgb(196 86 27 / 0.1);
+    --knopf: #1c5d99;
+    --knopf-text: #ffffff;
+    --verweis: #1c5d99;
+    --markierung: rgb(196 86 27 / 0.2);
+  }
+}
+
+@media (min-width: 640px) {
+  :root { --rand: 24px; }
+}
+
+@media (min-width: 1100px) {
+  :root { --rand: 40px; --abstand-gross: 4.5rem; }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--kopf-hoehe) + 1rem);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--grund);
+  color: var(--text);
+  font-family: var(--schrift-text);
+  font-size: var(--groesse-text);
+  line-height: 1.65;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text-stark);
+  font-family: var(--schrift-titel);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--verweis);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--markierung);
+  color: var(--text-stark);
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--schrift-mono);
+}
+
+/* Etikett: kurze Zeile in Großbuchstaben und Festbreitenschrift, etwa über einer Überschrift */
+.etikett {
+  margin: 0;
+  color: var(--akzent);
+  font-family: var(--schrift-mono);
+  font-size: var(--groesse-etikett);
+  font-weight: 500;
+  letter-spacing: var(--sperrung);
+  text-transform: uppercase;
+}
+
+/* Angaben in Festbreitenschrift, leise (Datum, Lesezeit, Anzahl) */
+.angabe {
+  color: var(--text-leise);
+  font-family: var(--schrift-mono);
+  font-size: var(--groesse-klein);
+  letter-spacing: 0.02em;
+}
+
+.angabe-gross {
+  text-transform: uppercase;
+  letter-spacing: var(--sperrung);
+  font-size: var(--groesse-etikett);
+}
+
+/* Rahmen: begrenzt die Breite und zieht ab mittlerer Breite die senkrechten Linien links und rechts */
+.rahmen {
+  width: 100%;
+  max-width: var(--breite);
+  margin-inline: auto;
+  padding-inline: var(--rand);
+}
+
+@media (min-width: 900px) {
+  .rahmen-linien {
+    border-inline: 1px solid var(--linie-zart);
+  }
+}
+
+/* Abschnitt über die ganze Breite des Rahmens, oben durch eine Linie getrennt */
+.abschnitt {
+  padding-block: var(--abstand-gross);
+  border-top: 1px solid var(--linie);
+}
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.1rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--knopf);
+  color: var(--knopf-text);
+  font: 600 var(--groesse-klein) / 1.2 var(--schrift-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.knopf:hover {
+  filter: brightness(1.08);
+}
+
+.nur-vorleser {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Inhalt eines Artikels (Markdown und MDX) */
+.inhalt {
+  max-width: var(--breite-text);
+  min-width: 0;
+}
+
+.inhalt > * + * {
+  margin-top: 1.15em;
+}
+
+.inhalt h2 {
+  margin-top: 2.4em;
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.1rem);
+}
+
+.inhalt h3 {
+  margin-top: 1.8em;
+  font-size: 1.35rem;
+}
+
+.inhalt h2 + *,
+.inhalt h3 + * {
+  margin-top: 0.7em;
+}
+
+.inhalt ul,
+.inhalt ol {
+  padding-left: 1.3em;
+}
+
+.inhalt li + li {
+  margin-top: 0.35em;
+}
+
+.inhalt li::marker {
+  color: var(--akzent);
+}
+
+.inhalt strong {
+  color: var(--text-stark);
+  font-weight: 600;
+}
+
+.inhalt blockquote {
+  margin-inline: 0;
+  padding: 0.2em 0 0.2em 1.1em;
+  border-left: 2px solid var(--akzent);
+  color: var(--text-stark);
+  font-family: var(--schrift-titel);
+  font-size: 1.2rem;
+}
+
+.inhalt :not(pre) > code {
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+  background: var(--akzent-grund);
+  color: var(--akzent);
+  font-size: 0.9em;
+}
+
+.inhalt hr {
+  border: 0;
+  border-top: 1px solid var(--linie);
+}
+
+.inhalt img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+/* Codeblöcke mit zwei Farbsätzen (astro.config.mjs); welcher gilt, entscheidet das Thema */
+.inhalt pre {
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  font-size: var(--groesse-klein);
+  line-height: 1.55;
+}
+
+.inhalt pre span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+}
+
+@media (prefers-color-scheme: light) {
+  .inhalt pre span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+  }
+}
+
+/* Tabellen (Ergebnisse): ist eine Tabelle breiter als die Spalte, rollt nur sie selbst, nie die Seite */
+.inhalt table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--groesse-klein);
+  font-variant-numeric: tabular-nums;
+}
+
+.inhalt th,
+.inhalt td {
+  padding: 0.6rem 1rem 0.6rem 0;
+  border-bottom: 1px solid var(--linie);
+  text-align: left;
+  vertical-align: top;
+}
+
+.inhalt th:last-child,
+.inhalt td:last-child {
+  padding-right: 0;
+}
+
+.inhalt th {
+  border-bottom-color: var(--text-leise);
+  color: var(--akzent);
+  font-family: var(--schrift-mono);
+  font-size: var(--groesse-etikett);
+  font-weight: 500;
+  letter-spacing: var(--sperrung);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.inhalt td {
+  color: var(--text-stark);
+}

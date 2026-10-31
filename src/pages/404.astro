@@ -1,0 +1,24 @@
+---
+// Seite für Adressen, die es nicht gibt
+import Grundgeruest from "../layouts/Grundgeruest.astro";
+import Seitenkopf from "../components/Seitenkopf.astro";
+import { pfad } from "../lib/pfad";
+---
+
+<Grundgeruest titel="Nicht gefunden">
+  <Seitenkopf pfad={[{ name: "Nicht gefunden" }]} titel="Diese Seite gibt es nicht" etikett="Fehler 404" />
+  <div class="weiter">
+    <a class="knopf" href={pfad("/")}>Zu allen Artikeln</a>
+    <a href={pfad("/suche/")}>Suche öffnen</a>
+  </div>
+</Grundgeruest>
+
+<style>
+  .weiter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.5rem;
+    padding-block: 1rem var(--abstand-gross);
+  }
+</style>

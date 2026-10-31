@@ -1,0 +1,102 @@
+---
+// Kopfleiste: Wortmarke und Hauptnavigation in Großbuchstaben. Am Telefon steht die Navigation in einer eigenen Zeile.
+import Marke from "./Marke.astro";
+import { NAVIGATION } from "../lib/seite";
+import { istAktiv, pfad } from "../lib/pfad";
+
+const aktuell = Astro.url.pathname;
+---
+
+<header class="kopf">
+  <div class="rahmen rahmen-linien leiste">
+    <Marke />
+    <nav aria-label="Hauptnavigation">
+      <ul>
+        {
+          NAVIGATION.map((e) => (
+            <li>
+              <a href={pfad(e.weg)} aria-current={istAktiv(e.weg, aktuell) ? "page" : undefined}>
+                {e.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .kopf {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding-top: env(safe-area-inset-top);
+    border-bottom: 1px solid var(--linie);
+    background: var(--grund);
+  }
+
+  .leiste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 2.5rem;
+    min-height: var(--kopf-hoehe);
+  }
+
+  nav {
+    flex: 1 1 auto;
+  }
+
+  ul {
+    display: flex;
+    gap: 1.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    display: inline-block;
+    padding-block: 0.35rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-leise);
+    font-family: var(--schrift-mono);
+    font-size: var(--groesse-klein);
+    font-weight: 500;
+    letter-spacing: var(--sperrung);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  nav a:hover {
+    color: var(--text-stark);
+  }
+
+  nav a[aria-current="page"] {
+    border-bottom-color: var(--akzent);
+    color: var(--text-stark);
+  }
+
+  /* Telefon: Marke oben, darunter die Navigation über die volle Breite in gleich breiten Feldern */
+  @media (max-width: 559px) {
+    .leiste {
+      padding-top: 0.5rem;
+    }
+
+    nav {
+      flex-basis: 100%;
+      margin-top: 0.35rem;
+      border-top: 1px solid var(--linie-zart);
+    }
+
+    ul {
+      gap: 0;
+      justify-content: space-between;
+    }
+
+    nav a {
+      padding-block: 0.6rem;
+    }
+  }
+</style>

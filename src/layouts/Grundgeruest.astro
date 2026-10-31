@@ -1,0 +1,77 @@
+---
+// Gerüst jeder Seite: Kopf mit Angaben für Browser, Startbildschirm und Web-App, Schriften, Kopfleiste, Inhalt, Fuß.
+import "@fontsource-variable/fraunces/opsz.css";
+import "@fontsource/barlow/400.css";
+import "@fontsource/barlow/400-italic.css";
+import "@fontsource/barlow/500.css";
+import "@fontsource/barlow/600.css";
+import "@fontsource-variable/jetbrains-mono";
+import "../styles/grund.css";
+import Kopf from "../components/Kopf.astro";
+import Fuss from "../components/Fuss.astro";
+import { SEITE } from "../lib/seite";
+import { pfad } from "../lib/pfad";
+
+interface Props {
+  titel?: string;
+  beschreibung?: string;
+  art?: "website" | "article";
+}
+
+const { titel, beschreibung = SEITE.beschreibung, art = "website" } = Astro.props;
+const voller = titel ? `${titel} | ${SEITE.name}` : SEITE.name;
+const kanonisch = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang={SEITE.sprache}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{voller}</title>
+    <meta name="description" content={beschreibung} />
+    <link rel="canonical" href={kanonisch} />
+    <meta property="og:title" content={titel ?? SEITE.name} />
+    <meta property="og:description" content={beschreibung} />
+    <meta property="og:type" content={art} />
+    <meta property="og:url" content={kanonisch} />
+    <meta property="og:site_name" content={SEITE.name} />
+    <meta name="theme-color" content={SEITE.farbe.dunkel} media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={SEITE.farbe.hell} media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href={pfad("/favicon-32.png")} />
+    <link rel="icon" type="image/png" sizes="192x192" href={pfad("/icon-192.png")} />
+    <link rel="apple-touch-icon" href={pfad("/apple-touch-icon.png")} />
+    <link rel="manifest" href={pfad("/site.webmanifest")} />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content={SEITE.kurzname} />
+    <slot name="kopf" />
+  </head>
+  <body>
+    <a class="springe nur-vorleser" href="#inhalt">Zum Inhalt</a>
+    <Kopf />
+    <main id="inhalt" class="rahmen rahmen-linien">
+      <slot />
+    </main>
+    <Fuss />
+  </body>
+</html>
+
+<style>
+  main {
+    min-height: calc(100vh - var(--kopf-hoehe));
+  }
+
+  .springe:focus {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 10;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 1rem;
+    clip-path: none;
+    background: var(--knopf);
+    color: var(--knopf-text);
+  }
+</style>

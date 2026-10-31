@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Vor jedem Commit: Version hochzählen (oder nur neue Kennung, wenn version.json schon bewusst geändert und vorgemerkt
+# ist), version.json mit vormerken und die vorgemerkten Textdateien auf typografische Zeichen prüfen.
+# Aktivieren: git config core.hooksPath tools/git-hooks
+set -euo pipefail
+HIER="$(git rev-parse --show-toplevel)"
+cd "$HIER"
+
+if git diff --cached --name-only | grep -qx 'version.json'; then
+  tools/version.sh id >/dev/null
+else
+  tools/version.sh patch >/dev/null
+fi
+git add version.json
+
+dateien="$(git diff --cached --name-only --diff-filter=ACM)"
+if [ -n "$dateien" ]; then
+  printf '%s\n' "$dateien" | python3 tools/zeichen.py || exit 1
+fi
+exit 0

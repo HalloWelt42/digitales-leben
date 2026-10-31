@@ -1,0 +1,169 @@
+---
+// Liste von Artikeln, auf Wunsch nach Jahren gruppiert mit großer Jahreszahl links (ab mittlerer Breite).
+import Schlagworte from "./Schlagworte.astro";
+import { artikelPfad, lesezeit, nachtraege, type Artikel } from "../lib/artikel";
+import { datumIso, datumText } from "../lib/datum";
+
+interface Props {
+  artikel: Artikel[];
+  nachJahren?: boolean;
+}
+
+const { artikel, nachJahren = true } = Astro.props;
+
+const gruppen: { jahr: string | null; artikel: Artikel[] }[] = [];
+for (const a of artikel) {
+  const jahr = nachJahren ? String(a.data.datum.getUTCFullYear()) : null;
+  const letzte = gruppen.at(-1);
+  if (letzte && letzte.jahr === jahr) letzte.artikel.push(a);
+  else gruppen.push({ jahr, artikel: [a] });
+}
+---
+
+<div class="liste">
+  {
+    gruppen.map((g) => (
+      <section class:list={["gruppe", { "mit-jahr": g.jahr }]} aria-label={g.jahr ?? "Artikel"}>
+        {g.jahr && (
+          <div class="jahr">
+            <p class="zahl">{g.jahr}</p>
+            <p class="angabe">{g.artikel.length} Artikel</p>
+          </div>
+        )}
+        <ol>
+          {g.artikel.map((a) => (
+            <li>
+              <article>
+                <div class="text">
+                  <h2>
+                    <a href={artikelPfad(a)}>{a.data.titel}</a>
+                  </h2>
+                  <p class="zusammenfassung">{a.data.zusammenfassung}</p>
+                  <Schlagworte artikel={a} />
+                </div>
+                <p class="angabe daten">
+                  {a.data.entwurf && <span class="entwurf">Entwurf</span>}
+                  <time datetime={datumIso(a.data.datum)}>{datumText(a.data.datum)}</time>
+                  <span>{lesezeit(a)} Min</span>
+                  {a.data.nachtraege.length > 0 && (
+                    <span title="Nachträge: Korrekturen und Erweiterungen seit der Veröffentlichung">
+                      {nachtraege(a).length} {nachtraege(a).length === 1 ? "Nachtrag" : "Nachträge"}
+                    </span>
+                  )}
+                </p>
+              </article>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .gruppe {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gruppe.mit-jahr {
+    border-top: 2px solid var(--text-stark);
+  }
+
+  .gruppe + .gruppe {
+    margin-top: 3rem;
+  }
+
+  .jahr {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+
+  .zahl {
+    color: var(--text-stark);
+    font-family: var(--schrift-titel);
+    font-size: clamp(3rem, 2.4rem + 3vw, 4.5rem);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 900px) {
+    .gruppe.mit-jahr {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+      column-gap: 3rem;
+    }
+
+    .jahr {
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.75rem;
+      padding-top: 1.25rem;
+    }
+  }
+
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    border-top: 1px solid var(--linie);
+  }
+
+  article {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem 2rem;
+    padding-block: 1.4rem;
+  }
+
+  @media (min-width: 700px) {
+    article {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .daten {
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+    }
+  }
+
+  h2 {
+    font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.6rem);
+  }
+
+  h2 a {
+    color: var(--text-stark);
+    text-decoration: none;
+  }
+
+  h2 a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--akzent);
+  }
+
+  .zusammenfassung {
+    margin-block: 0.5rem 0.8rem;
+    color: var(--text-leise);
+  }
+
+  .daten {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .entwurf {
+    color: var(--akzent);
+    text-transform: uppercase;
+    letter-spacing: var(--sperrung);
+  }
+</style>

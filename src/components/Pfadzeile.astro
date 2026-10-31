@@ -1,0 +1,68 @@
+---
+// Pfadzeile über dem Seitentitel: Start / Bereich / Seite, in Großbuchstaben und Festbreitenschrift.
+// Der letzte Teil ist die aktuelle Seite und trägt keinen Verweis.
+import { pfad } from "../lib/pfad";
+
+export interface PfadTeil {
+  name: string;
+  weg?: string;
+}
+
+interface Props {
+  teile: PfadTeil[];
+}
+
+const teile: PfadTeil[] = [{ name: "Start", weg: "/" }, ...Astro.props.teile];
+---
+
+<nav class="pfadzeile" aria-label="Pfad">
+  <ol>
+    {
+      teile.map((t, i) => (
+        <li>
+          {t.weg && i < teile.length - 1 ? <a href={pfad(t.weg)}>{t.name}</a> : <span aria-current="page">{t.name}</span>}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--schrift-mono);
+    font-size: var(--groesse-etikett);
+    letter-spacing: var(--sperrung);
+    text-transform: uppercase;
+  }
+
+  li {
+    min-width: 0;
+    color: var(--text-leise);
+    overflow-wrap: anywhere;
+  }
+
+  li + li::before {
+    content: "/";
+    margin-inline: 0.6em;
+    opacity: 0.6;
+  }
+
+  a {
+    color: var(--text-leise);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--text-stark);
+  }
+
+  span {
+    color: var(--text);
+  }
+</style>
