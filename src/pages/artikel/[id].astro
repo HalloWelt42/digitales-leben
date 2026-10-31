@@ -5,7 +5,7 @@ import { render } from "astro:content";
 import Grundgeruest from "../../layouts/Grundgeruest.astro";
 import Seitenkopf from "../../components/Seitenkopf.astro";
 import { SCHLAGWORT_ARTEN, nachtragArt } from "../../lib/aufbau";
-import { alleArtikel, lesezeit, nachtraege, schlagwortPfad, type Artikel } from "../../lib/artikel";
+import { alleArtikel, istEntwurf, lesezeit, nachtraege, schlagwortPfad, type Artikel } from "../../lib/artikel";
 import { datumIso, datumText } from "../../lib/datum";
 
 export async function getStaticPaths() {
@@ -34,7 +34,7 @@ const schlagwortGruppen = SCHLAGWORT_ARTEN.map((a) => ({ art: a, werte: data.sch
 ---
 
 <Grundgeruest titel={data.titel} beschreibung={data.zusammenfassung} art="article">
-  <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={data.entwurf ? "Entwurf, nicht veröffentlicht" : undefined}>
+  <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={istEntwurf(artikel) ? "Entwurf, nicht veröffentlicht" : undefined}>
     <Fragment slot="angaben">
       <span><time datetime={datumIso(data.datum)}>{datumText(data.datum)}</time></span>
       <span>{lesezeit(artikel)} Min Lesezeit</span>

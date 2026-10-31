@@ -6,14 +6,19 @@ import { pfad } from "./pfad";
 
 export type Artikel = CollectionEntry<"artikel">;
 
-// Entwürfe erscheinen nur beim Schreiben (Entwicklungsserver) oder ausdrücklich mit KIW_ENTWUERFE=1, nie im Bau
-// für die Veröffentlichung.
-export const MIT_ENTWUERFEN = import.meta.env.DEV || process.env.KIW_ENTWUERFE === "1";
+// Entwürfe liegen nie im Repo. Die Vorschau zur Abnahme baut mit den Entwürfen dazu und nennt ihre Kennungen in
+// KIW_ENTWUERFE (durch Komma getrennt); nur sie tragen dann das Etikett "Entwurf". Im Bau für die Veröffentlichung ist
+// die Liste leer.
+const ENTWUERFE = new Set((process.env.KIW_ENTWUERFE ?? "").split(",").map((k) => k.trim()).filter(Boolean));
+
+export function istEntwurf(artikel: Artikel): boolean {
+  return ENTWUERFE.has(artikel.id);
+}
 
 const WOERTER_JE_MINUTE = 200;
 
 export async function alleArtikel(): Promise<Artikel[]> {
-  const artikel = await getCollection("artikel", (a) => MIT_ENTWUERFEN || !a.data.entwurf);
+  const artikel = await getCollection("artikel");
   return artikel.sort((a, b) => b.data.datum.getTime() - a.data.datum.getTime());
 }
 

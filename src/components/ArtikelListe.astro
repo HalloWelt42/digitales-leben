@@ -1,7 +1,7 @@
 ---
 // Liste von Artikeln, auf Wunsch nach Jahren gruppiert mit großer Jahreszahl links (ab mittlerer Breite).
 import Schlagworte from "./Schlagworte.astro";
-import { artikelPfad, lesezeit, nachtraege, type Artikel } from "../lib/artikel";
+import { artikelPfad, istEntwurf, lesezeit, nachtraege, type Artikel } from "../lib/artikel";
 import { datumIso, datumText } from "../lib/datum";
 
 interface Props {
@@ -42,7 +42,7 @@ for (const a of artikel) {
                   <Schlagworte artikel={a} />
                 </div>
                 <p class="angabe daten">
-                  {a.data.entwurf && <span class="entwurf">Entwurf</span>}
+                  {istEntwurf(a) && <span class="entwurf">Entwurf</span>}
                   <time datetime={datumIso(a.data.datum)}>{datumText(a.data.datum)}</time>
                   <span>{lesezeit(a)} Min</span>
                   {a.data.nachtraege.length > 0 && (

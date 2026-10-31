@@ -2,7 +2,7 @@
 // (skripte/suche.ts) lädt ihn im Browser und braucht keinen Dienst.
 import type { APIRoute } from "astro";
 import { SCHLAGWORT_ARTEN } from "../lib/aufbau";
-import { alleArtikel, artikelPfad, klartext } from "../lib/artikel";
+import { alleArtikel, artikelPfad, istEntwurf, klartext } from "../lib/artikel";
 import { datumText } from "../lib/datum";
 import type { SuchEintrag } from "../skripte/suchindex";
 
@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
     zusammenfassung: a.data.zusammenfassung,
     schlagworte: SCHLAGWORT_ARTEN.flatMap((art) => a.data.schlagworte[art.schluessel]),
     text: klartext(a.body ?? ""),
-    entwurf: a.data.entwurf,
+    entwurf: istEntwurf(a),
   }));
   return new Response(JSON.stringify(eintraege), { headers: { "Content-Type": "application/json; charset=utf-8" } });
 };

@@ -1,5 +1,6 @@
 // Inhaltssammlung der Artikel. Jeder Artikel ist eine Markdown- oder MDX-Datei in src/content/artikel; der Dateiname
-// wird zur Adresse (/artikel/<name>/). Aufbau und Pflichtangaben stehen hier, die Vorlage zeigt sie im Zusammenhang.
+// wird zur Adresse (/artikel/<name>/). Hier liegen nur freigegebene Artikel: jeder Push veröffentlicht sofort.
+// Entwürfe leben außerhalb des Repos; die Vorschau legt sie für ihren Bau dazu (lib/artikel.ts, ENTWUERFE).
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
@@ -25,13 +26,12 @@ const nachtrag = z.object({
 });
 
 const artikel = defineCollection({
-  loader: glob({ base: "./src/content/artikel", pattern: "**/*.{md,mdx}" }),
+  loader: glob({ base: "./src/content/artikel", pattern: "*.{md,mdx}" }),
   schema: z.object({
     titel: z.string().min(1),
     frage: z.string().min(1),
     zusammenfassung: z.string().min(1),
     datum: z.coerce.date(),
-    entwurf: z.boolean().default(false),
     schlagworte: schlagworte.default({ modell: [], faehigkeit: [], geraet: [] }),
     nachtraege: z.array(nachtrag).default([]),
   }),
