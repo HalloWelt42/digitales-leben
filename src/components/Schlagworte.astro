@@ -1,14 +1,14 @@
 ---
 // Schlagworte eines Artikels als Verweise auf ihre Übersichtsseiten; die Art steht im Hinweis beim Überfahren.
 import { SCHLAGWORT_ARTEN } from "../lib/aufbau";
-import { schlagwortPfad, type Artikel } from "../lib/artikel";
+import { schlagwortPfad, schlagwortWerte, type Artikel } from "../lib/artikel";
 
 interface Props {
   artikel: Artikel;
 }
 
-const { schlagworte } = Astro.props.artikel.data;
-const eintraege = SCHLAGWORT_ARTEN.flatMap((a) => schlagworte[a.schluessel].map((wert) => ({ art: a, wert })));
+const { artikel } = Astro.props;
+const eintraege = SCHLAGWORT_ARTEN.flatMap((a) => schlagwortWerte(artikel, a.schluessel).map((wert) => ({ art: a, wert })));
 ---
 
 {
@@ -50,6 +50,11 @@ const eintraege = SCHLAGWORT_ARTEN.flatMap((a) => schlagworte[a.schluessel].map(
   a:hover {
     border-color: var(--akzent);
     color: var(--text-stark);
+  }
+
+  a[data-art="art"] {
+    border-color: var(--akzent);
+    color: var(--akzent);
   }
 
   a[data-art="modell"] {

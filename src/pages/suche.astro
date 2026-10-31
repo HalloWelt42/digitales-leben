@@ -5,14 +5,14 @@ import Seitenkopf from "../components/Seitenkopf.astro";
 import { pfad } from "../lib/pfad";
 ---
 
-<Grundgeruest titel="Suche" beschreibung="Alle Artikel durchsuchen: Titel, Frage, Schlagworte und Text.">
+<Grundgeruest titel="Suche" beschreibung="Alle Artikel durchsuchen: Titel, Zusammenfassung, Schlagworte und Text.">
   <Seitenkopf pfad={[{ name: "Suche" }]} titel="Suche" />
   <div class="suche">
     <form data-suche data-index={pfad("/suchindex.json")} role="search">
       <label class="etikett" for="suchbegriff">Suchbegriff</label>
       <input id="suchbegriff" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="etwa Whisper oder Echtzeit" />
     </form>
-    <p class="meldung angabe" data-meldung aria-live="polite">Durchsucht Titel, Frage, Schlagworte und Text aller Artikel.</p>
+    <p class="meldung angabe" data-meldung aria-live="polite">Durchsucht Titel, Zusammenfassung, Schlagworte und Text aller Artikel.</p>
     <noscript><p class="meldung angabe">Die Suche braucht eingeschaltetes JavaScript.</p></noscript>
     <ol class="treffer" data-treffer></ol>
   </div>

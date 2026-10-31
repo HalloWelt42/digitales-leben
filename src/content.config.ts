@@ -4,15 +4,18 @@
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
-import { NACHTRAG_ARTEN, type NachtragArt, type SchlagwortArt } from "./lib/aufbau";
+import { ARTIKEL_ARTEN, NACHTRAG_ARTEN, artikelArt, type ArtikelArt, type FreiesSchlagwort, type NachtragArt } from "./lib/aufbau";
 
 const liste = z.array(z.string().min(1)).default([]);
 
 const schlagworte = z.object({
+  thema: liste,
   modell: liste,
   faehigkeit: liste,
   geraet: liste,
-} satisfies Record<SchlagwortArt, typeof liste>);
+} satisfies Record<FreiesSchlagwort, typeof liste>);
+
+const artikelArten = ARTIKEL_ARTEN.map((a) => a.schluessel) as [ArtikelArt, ...ArtikelArt[]];
 
 const nachtragArten = NACHTRAG_ARTEN.map((a) => a.schluessel) as [NachtragArt, ...NachtragArt[]];
 
@@ -27,14 +30,22 @@ const nachtrag = z.object({
 
 const artikel = defineCollection({
   loader: glob({ base: "./src/content/artikel", pattern: "*.{md,mdx}" }),
-  schema: z.object({
-    titel: z.string().min(1),
-    frage: z.string().min(1),
-    zusammenfassung: z.string().min(1),
-    datum: z.coerce.date(),
-    schlagworte: schlagworte.default({ modell: [], faehigkeit: [], geraet: [] }),
-    nachtraege: z.array(nachtrag).default([]),
-  }),
+  schema: z
+    .object({
+      titel: z.string().min(1),
+      art: z.enum(artikelArten),
+      // die Frage, die der Artikel beantwortet; Pflicht bei Arten mit fester Gliederung, sonst optional
+      frage: z.string().min(1).optional(),
+      zusammenfassung: z.string().min(1),
+      datum: z.coerce.date(),
+      schlagworte: schlagworte.default({ thema: [], modell: [], faehigkeit: [], geraet: [] }),
+      nachtraege: z.array(nachtrag).default([]),
+    })
+    .superRefine((d, ctx) => {
+      if (artikelArt(d.art).gliederung && !d.frage) {
+        ctx.addIssue({ code: "custom", path: ["frage"], message: `Ein Artikel der Art ${artikelArt(d.art).name} braucht eine Frage` });
+      }
+    }),
 });
 
 export const collections = { artikel };

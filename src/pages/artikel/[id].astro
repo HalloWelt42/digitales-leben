@@ -1,11 +1,12 @@
 ---
-// Ein Artikel: Frage, Inhalt (Aufbau der Messung, Ergebnisse, Erkenntnis) und Nachträge mit Datum.
+// Ein Artikel: Art, Frage (falls gesetzt), Inhalt und Nachträge mit Datum. Bei Arten mit fester Gliederung (Messung,
+// Vergleich) prüft der Bau die Zwischenüberschriften.
 // Daneben ab großer Breite das Inhaltsverzeichnis und die Schlagworte nach Art.
 import { render } from "astro:content";
 import Grundgeruest from "../../layouts/Grundgeruest.astro";
 import Seitenkopf from "../../components/Seitenkopf.astro";
-import { SCHLAGWORT_ARTEN, nachtragArt } from "../../lib/aufbau";
-import { alleArtikel, istEntwurf, lesezeit, nachtraege, schlagwortPfad, type Artikel } from "../../lib/artikel";
+import { SCHLAGWORT_ARTEN, artikelArt, nachtragArt } from "../../lib/aufbau";
+import { alleArtikel, gliederungPruefen, istEntwurf, lesezeit, nachtraege, schlagwortPfad, schlagwortWerte, type Artikel } from "../../lib/artikel";
 import { datumIso, datumText } from "../../lib/datum";
 
 export async function getStaticPaths() {
@@ -20,6 +21,7 @@ const { artikel } = Astro.props;
 const { data } = artikel;
 const { Content, headings } = await render(artikel);
 const kapitel = headings.filter((h) => h.depth === 2);
+gliederungPruefen(artikel, kapitel.map((h) => h.text));
 const liste = nachtraege(artikel);
 
 // Ein Nachtrag, der auf einen Abschnitt verweist, muss ihn auch treffen; sonst bricht der Bau mit klarer Meldung ab
@@ -30,11 +32,12 @@ for (const n of liste) {
     throw new Error(`${artikel.id}: Nachtrag vom ${datumText(n.datum)} verweist auf Abschnitt "${n.abschnitt}"; vorhanden: ${bekannt}`);
   }
 }
-const schlagwortGruppen = SCHLAGWORT_ARTEN.map((a) => ({ art: a, werte: data.schlagworte[a.schluessel] })).filter((g) => g.werte.length);
+const schlagwortGruppen = SCHLAGWORT_ARTEN.map((a) => ({ art: a, werte: schlagwortWerte(artikel, a.schluessel) })).filter((g) => g.werte.length);
+const art = artikelArt(data.art).name;
 ---
 
 <Grundgeruest titel={data.titel} beschreibung={data.zusammenfassung} art="article">
-  <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={istEntwurf(artikel) ? "Entwurf, nicht veröffentlicht" : undefined}>
+  <Seitenkopf pfad={[{ name: "Artikel", weg: "/" }, { name: data.titel }]} titel={data.titel} etikett={istEntwurf(artikel) ? `Entwurf, nicht veröffentlicht · ${art}` : art}>
     <Fragment slot="angaben">
       <span><time datetime={datumIso(data.datum)}>{datumText(data.datum)}</time></span>
       <span>{lesezeit(artikel)} Min Lesezeit</span>
@@ -50,10 +53,14 @@ const schlagwortGruppen = SCHLAGWORT_ARTEN.map((a) => ({ art: a, werte: data.sch
 
   <div class="koerper">
     <article class="inhalt">
-      <section class="frage" aria-labelledby="frage">
-        <p class="etikett" id="frage">Die Frage</p>
-        <p class="frage-text">{data.frage}</p>
-      </section>
+      {
+        data.frage && (
+          <section class="frage" aria-labelledby="frage">
+            <p class="etikett" id="frage">Die Frage</p>
+            <p class="frage-text">{data.frage}</p>
+          </section>
+        )
+      }
 
       <Content />
 

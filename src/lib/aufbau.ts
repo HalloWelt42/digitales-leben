@@ -1,11 +1,34 @@
-// Bausteine des Artikelaufbaus, die Schema, Seiten und Suche gemeinsam nutzen: die Arten der Schlagworte und der
+// Bausteine des Artikelaufbaus, die Schema, Seiten und Suche gemeinsam nutzen: Artikelarten, Schlagworte und
 // Nachträge. Neue Arten kommen nur hier hinzu.
 
-export const SCHLAGWORT_ARTEN = [
+// Artikelarten. Messung und Vergleich haben eine feste Gliederung: eine Frage in den Angaben und diese Zwischen-
+// überschriften in dieser Reihenfolge (geprüft beim Bau). Die übrigen Arten gliedern frei, die Frage ist dort optional.
+export const ARTIKEL_ARTEN = [
+  { schluessel: "grundlagen", name: "Grundlagen", gliederung: null },
+  { schluessel: "erfahrung", name: "Erfahrung", gliederung: null },
+  { schluessel: "anleitung", name: "Anleitung", gliederung: null },
+  { schluessel: "messung", name: "Messung", gliederung: ["Aufbau der Messung", "Ergebnisse", "Erkenntnis"] },
+  { schluessel: "vergleich", name: "Vergleich", gliederung: ["Aufbau des Vergleichs", "Ergebnisse", "Erkenntnis"] },
+] as const;
+
+export type ArtikelArt = (typeof ARTIKEL_ARTEN)[number]["schluessel"];
+
+export function artikelArt(schluessel: ArtikelArt) {
+  return ARTIKEL_ARTEN.find((a) => a.schluessel === schluessel)!;
+}
+
+// Freie Schlagworte: Listen in den Angaben eines Artikels unter "schlagworte"
+export const FREIE_SCHLAGWORTE = [
+  { schluessel: "thema", name: "Thema", mehrzahl: "Themen" },
   { schluessel: "modell", name: "Modell", mehrzahl: "Modelle" },
   { schluessel: "faehigkeit", name: "Fähigkeit", mehrzahl: "Fähigkeiten" },
   { schluessel: "geraet", name: "Gerät", mehrzahl: "Geräte" },
 ] as const;
+
+export type FreiesSchlagwort = (typeof FREIE_SCHLAGWORTE)[number]["schluessel"];
+
+// Alle Arten von Schlagworten mit Übersicht: die Artikelart (aus der Angabe "art") und die freien
+export const SCHLAGWORT_ARTEN = [{ schluessel: "art", name: "Artikelart", mehrzahl: "Artikelarten" }, ...FREIE_SCHLAGWORTE] as const;
 
 export type SchlagwortArt = (typeof SCHLAGWORT_ARTEN)[number]["schluessel"];
 

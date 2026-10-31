@@ -1,7 +1,7 @@
 // Zugriff auf die Artikel: welche gezeigt werden, in welcher Reihenfolge, und was sich aus ihnen ableitet
 // (Adresse, letzte Änderung, Lesezeit, Klartext für die Suche, Schlagworte).
 import { getCollection, type CollectionEntry } from "astro:content";
-import { SCHLAGWORT_ARTEN, kennung, type SchlagwortArt } from "./aufbau";
+import { SCHLAGWORT_ARTEN, artikelArt, kennung, type SchlagwortArt } from "./aufbau";
 import { pfad } from "./pfad";
 
 export type Artikel = CollectionEntry<"artikel">;
@@ -54,6 +54,23 @@ export function lesezeit(artikel: Artikel): number {
   return Math.max(1, Math.round(woerter / WOERTER_JE_MINUTE));
 }
 
+// Werte eines Artikels zu einer Art von Schlagwort: die Artikelart mit ihrem Namen, die freien aus den Angaben
+export function schlagwortWerte(artikel: Artikel, art: SchlagwortArt): readonly string[] {
+  return art === "art" ? [artikelArt(artikel.data.art).name] : artikel.data.schlagworte[art];
+}
+
+// Fehlt eine Zwischenüberschrift der festen Gliederung (Messung, Vergleich) oder steht sie an falscher Stelle, ist das
+// ein Fehler im Inhalt; die Meldung nennt, was erwartet wird.
+export function gliederungPruefen(artikel: Artikel, ueberschriften: string[]): void {
+  const verlangt = artikelArt(artikel.data.art).gliederung;
+  if (!verlangt) return;
+  const gefunden = ueberschriften.filter((u) => (verlangt as readonly string[]).includes(u));
+  if (gefunden.join("|") !== verlangt.join("|")) {
+    throw new Error(`${artikel.id}: Art ${artikelArt(artikel.data.art).name} verlangt die Zwischenüberschriften ` +
+      `${verlangt.map((v) => `"## ${v}"`).join(", ")} in dieser Reihenfolge; gefunden: ${ueberschriften.join(", ") || "keine"}`);
+  }
+}
+
 export interface Schlagwort {
   art: SchlagwortArt;
   wert: string;
@@ -72,7 +89,7 @@ export function sammleSchlagworte(artikel: Artikel[]): Map<SchlagwortArt, Schlag
   for (const { schluessel: art } of SCHLAGWORT_ARTEN) {
     const nachKennung = new Map<string, Schlagwort>();
     for (const a of artikel) {
-      for (const wert of a.data.schlagworte[art]) {
+      for (const wert of schlagwortWerte(a, art)) {
         const k = kennung(wert);
         const vorhanden = nachKennung.get(k);
         if (vorhanden && vorhanden.wert !== wert) {

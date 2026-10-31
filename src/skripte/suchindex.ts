@@ -5,7 +5,7 @@ export interface SuchEintrag {
   titel: string;
   pfad: string;
   datum: string;
-  frage: string;
+  frage: string;            // leer, wenn der Artikel keine Frage stellt
   zusammenfassung: string;
   schlagworte: string[];
   text: string;

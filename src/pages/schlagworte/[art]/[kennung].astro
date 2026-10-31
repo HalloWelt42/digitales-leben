@@ -22,7 +22,7 @@ const { schlagwort } = Astro.props;
 const art = schlagwortArt(schlagwort.art);
 ---
 
-<Grundgeruest titel={`${schlagwort.wert} (${art.name})`} beschreibung={`Alle Artikel zum ${art.name} ${schlagwort.wert}.`}>
+<Grundgeruest titel={`${schlagwort.wert} (${art.name})`} beschreibung={`Alle Artikel mit dem Schlagwort ${schlagwort.wert} (${art.name}).`}>
   <Seitenkopf
     pfad={[{ name: "Schlagworte", weg: "/schlagworte/" }, { name: art.mehrzahl, weg: `/schlagworte/#${art.schluessel}` }, { name: schlagwort.wert }]}
     titel={schlagwort.wert}

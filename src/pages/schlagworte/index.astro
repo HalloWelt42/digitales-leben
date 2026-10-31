@@ -11,7 +11,7 @@ const arten = SCHLAGWORT_ARTEN.map((art) => ({ art, schlagworte: gesammelt.get(a
 
 <Grundgeruest titel="Schlagworte" beschreibung="Alle Artikel nach Modell, Fähigkeit und Gerät.">
   <Seitenkopf pfad={[{ name: "Schlagworte" }]} titel="Schlagworte">
-    <p slot="einleitung">Jeder Artikel trägt Schlagworte, etwa zum Thema, zum Modell, zur Fähigkeit oder zum Gerät.</p>
+    <p slot="einleitung">Jeder Artikel hat eine Art, etwa Grundlagen, Anleitung oder Messung, und Schlagworte zum Thema, zum Modell, zur Fähigkeit oder zum Gerät.</p>
     <Fragment slot="angaben">
       {arten.map((a) => <a href={`#${a.art.schluessel}`}>{a.schlagworte.length} {a.schlagworte.length === 1 ? a.art.name : a.art.mehrzahl}</a>)}
     </Fragment>
