@@ -1,6 +1,7 @@
 ---
 // Kopfleiste: Wortmarke und Hauptnavigation in Großbuchstaben. Am Telefon steht die Navigation in einer eigenen Zeile.
 import Marke from "./Marke.astro";
+import Themaschalter from "./Themaschalter.astro";
 import { NAVIGATION } from "../lib/seite";
 import { istAktiv, pfad } from "../lib/pfad";
 
@@ -23,6 +24,7 @@ const aktuell = Astro.url.pathname;
         }
       </ul>
     </nav>
+    <div class="schalter"><Themaschalter /></div>
   </div>
 </header>
 
@@ -78,13 +80,23 @@ const aktuell = Astro.url.pathname;
     color: var(--text-stark);
   }
 
+  .schalter {
+    display: flex;
+    margin-left: auto;
+  }
+
   /* Telefon: Marke oben, darunter die Navigation über die volle Breite in gleich breiten Feldern */
   @media (max-width: 559px) {
     .leiste {
       padding-top: 0.5rem;
     }
 
+    .schalter {
+      order: 2;
+    }
+
     nav {
+      order: 3;
       flex-basis: 100%;
       margin-top: 0.35rem;
       border-top: 1px solid var(--linie-zart);

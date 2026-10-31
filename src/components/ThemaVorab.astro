@@ -1,0 +1,18 @@
+---
+// Setzt das gemerkte Thema, bevor die Seite gezeichnet wird, damit nie kurz das falsche Thema aufblitzt. Muss im Kopf
+// der Seite stehen und läuft sofort (inline, nicht verzögert). Ohne Speicher oder ohne Skript gilt die Vorgabe hell.
+import { SPEICHER_SCHLUESSEL, THEMA_FARBE, THEMEN, VORGABE } from "../lib/thema";
+---
+
+<meta name="theme-color" content={THEMA_FARBE[VORGABE]} data-themafarbe />
+<script is:inline define:vars={{ schluessel: SPEICHER_SCHLUESSEL, themen: THEMEN, vorgabe: VORGABE, farben: THEMA_FARBE }}>
+  let thema = vorgabe;
+  try {
+    const gemerkt = localStorage.getItem(schluessel);
+    if (themen.includes(gemerkt)) thema = gemerkt;
+  } catch {
+    // ohne Speicher (privates Fenster, gesperrt) bleibt die Vorgabe
+  }
+  document.documentElement.dataset.thema = thema;
+  document.querySelector("meta[data-themafarbe]")?.setAttribute("content", farben[thema]);
+</script>

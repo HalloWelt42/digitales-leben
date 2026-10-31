@@ -1,0 +1,90 @@
+---
+// Schalter zwischen hellem und dunklem Thema in der Kopfleiste; die Wahl merkt sich der Browser
+import moon from "@fortawesome/fontawesome-free/svgs/solid/moon.svg?raw";
+import sun from "@fortawesome/fontawesome-free/svgs/solid/sun.svg?raw";
+import { SPEICHER_SCHLUESSEL, THEMA_FARBE } from "../lib/thema";
+---
+
+<button
+  type="button"
+  class="themaschalter"
+  data-themaschalter
+  data-schluessel={SPEICHER_SCHLUESSEL}
+  data-farben={JSON.stringify(THEMA_FARBE)}
+  aria-label="Dunkles Thema"
+  aria-pressed="false"
+  title="Dunkles Thema einschalten"
+>
+  <span class="symbol mond" set:html={moon} />
+  <span class="symbol sonne" set:html={sun} />
+</button>
+
+<script>
+  import type { Thema } from "../lib/thema";
+
+  const schalter = document.querySelector<HTMLButtonElement>("[data-themaschalter]");
+
+  function zeige(thema: Thema) {
+    if (!schalter) return;
+    const dunkel = thema === "dunkel";
+    schalter.setAttribute("aria-pressed", String(dunkel));
+    schalter.title = dunkel ? "Helles Thema einschalten" : "Dunkles Thema einschalten";
+  }
+
+  function setze(thema: Thema) {
+    document.documentElement.dataset.thema = thema;
+    const farben = JSON.parse(schalter?.dataset.farben ?? "{}") as Record<Thema, string>;
+    document.querySelector("meta[data-themafarbe]")?.setAttribute("content", farben[thema]);
+    try {
+      localStorage.setItem(schalter?.dataset.schluessel ?? "", thema);
+    } catch {
+      // ohne Speicher gilt die Wahl nur für diese Seite
+    }
+    zeige(thema);
+  }
+
+  zeige(document.documentElement.dataset.thema === "dunkel" ? "dunkel" : "hell");
+  schalter?.addEventListener("click", () => setze(document.documentElement.dataset.thema === "dunkel" ? "hell" : "dunkel"));
+</script>
+
+<style>
+  .themaschalter {
+    display: inline-grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-right: -0.6rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-leise);
+    cursor: pointer;
+  }
+
+  .themaschalter:hover {
+    background: var(--linie-zart);
+    color: var(--text-stark);
+  }
+
+  .symbol {
+    display: grid;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .symbol :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Gezeigt wird das Ziel des Wechsels: im hellen Thema der Mond, im dunklen die Sonne */
+  .sonne,
+  :global([data-thema="dunkel"]) .mond {
+    display: none;
+  }
+
+  :global([data-thema="dunkel"]) .sonne {
+    display: grid;
+  }
+</style>

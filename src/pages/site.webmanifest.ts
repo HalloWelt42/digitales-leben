@@ -2,6 +2,7 @@
 import type { APIRoute } from "astro";
 import { SEITE } from "../lib/seite";
 import { pfad } from "../lib/pfad";
+import { THEMA_FARBE, VORGABE } from "../lib/thema";
 
 export const GET: APIRoute = () => {
   const symbol = (datei: string, groesse: number, zweck: "any" | "maskable") => ({
@@ -18,8 +19,8 @@ export const GET: APIRoute = () => {
     start_url: pfad("/"),
     scope: pfad("/"),
     display: "standalone",
-    background_color: SEITE.farbe.dunkel,
-    theme_color: SEITE.farbe.dunkel,
+    background_color: THEMA_FARBE[VORGABE],
+    theme_color: THEMA_FARBE[VORGABE],
     icons: [
       symbol("icon-192.png", 192, "any"),
       symbol("icon-512.png", 512, "any"),

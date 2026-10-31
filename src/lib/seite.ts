@@ -1,5 +1,5 @@
 // Angaben zur Seite an einem Ort: Name, Beschreibung, Hauptnavigation, Farben für Browser und Startbildschirm.
-// Die Farben entsprechen dem Grund der beiden Themen in styles/grund.css (--grund).
+// Die Farben entsprechen dem Grund der beiden Themen in styles/grund.css (--grund); welches gilt, regelt lib/thema.ts.
 
 export const SEITE = {
   name: "KI-Wissen",

@@ -9,8 +9,10 @@ import "@fontsource-variable/jetbrains-mono";
 import "../styles/grund.css";
 import Kopf from "../components/Kopf.astro";
 import Fuss from "../components/Fuss.astro";
+import ThemaVorab from "../components/ThemaVorab.astro";
 import { SEITE } from "../lib/seite";
 import { pfad } from "../lib/pfad";
+import { VORGABE } from "../lib/thema";
 
 interface Props {
   titel?: string;
@@ -24,7 +26,7 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
-<html lang={SEITE.sprache}>
+<html lang={SEITE.sprache} data-thema={VORGABE}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -36,8 +38,7 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:type" content={art} />
     <meta property="og:url" content={kanonisch} />
     <meta property="og:site_name" content={SEITE.name} />
-    <meta name="theme-color" content={SEITE.farbe.dunkel} media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content={SEITE.farbe.hell} media="(prefers-color-scheme: light)" />
+    <ThemaVorab />
     <link rel="icon" type="image/png" sizes="32x32" href={pfad("/favicon-32.png")} />
     <link rel="icon" type="image/png" sizes="192x192" href={pfad("/icon-192.png")} />
     <link rel="apple-touch-icon" href={pfad("/apple-touch-icon.png")} />

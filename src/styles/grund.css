@@ -1,23 +1,25 @@
 /* Grundstil der Seite: Farben beider Themen, Schriften, Maße und die Gestaltung von Fließtext und Artikelinhalt.
-   Das Thema folgt der Einstellung des Systems; dunkel ist die Vorgabe. Jede Farbe und jedes Maß steht nur hier. */
+   Jede Farbe und jedes Maß steht nur hier. */
 
+/* Thema: hell ist die Vorgabe; dunkel gilt mit data-thema="dunkel" am Wurzelelement (Schalter in der Kopfleiste,
+   gesetzt vor dem ersten Zeichnen vom Skript im Kopf, components/Thema.astro). */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --grund: #1d1b18;
-  --grund-tief: #161412;
-  --flaeche: #26231f;
-  --text: #d9d1c4;
-  --text-stark: #f2ede5;
-  --text-leise: #ada496;
-  --linie: rgb(242 236 226 / 0.15);
-  --linie-zart: rgb(242 236 226 / 0.08);
-  --akzent: #eaa968;
-  --akzent-grund: rgb(234 169 104 / 0.12);
-  --knopf: #93c5ee;
-  --knopf-text: #161412;
-  --verweis: #93c5ee;
-  --markierung: rgb(234 169 104 / 0.28);
+  --grund: #faf8f4;
+  --grund-tief: #f2ede5;
+  --flaeche: #fffefb;
+  --text: #3a342c;
+  --text-stark: #1d1b18;
+  --text-leise: #675f53;
+  --linie: rgb(74 56 30 / 0.2);
+  --linie-zart: rgb(74 56 30 / 0.08);
+  --akzent: #a8470f;
+  --akzent-grund: rgb(196 86 27 / 0.1);
+  --knopf: #1c5d99;
+  --knopf-text: #ffffff;
+  --verweis: #1c5d99;
+  --markierung: rgb(196 86 27 / 0.2);
 
   --schrift-titel: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --schrift-text: "Barlow", system-ui, sans-serif;
@@ -37,25 +39,23 @@
   --radius: 6px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light;
+:root[data-thema="dunkel"] {
+  color-scheme: dark;
 
-    --grund: #faf8f4;
-    --grund-tief: #f2ede5;
-    --flaeche: #fffefb;
-    --text: #3a342c;
-    --text-stark: #1d1b18;
-    --text-leise: #675f53;
-    --linie: rgb(74 56 30 / 0.2);
-    --linie-zart: rgb(74 56 30 / 0.08);
-    --akzent: #a8470f;
-    --akzent-grund: rgb(196 86 27 / 0.1);
-    --knopf: #1c5d99;
-    --knopf-text: #ffffff;
-    --verweis: #1c5d99;
-    --markierung: rgb(196 86 27 / 0.2);
-  }
+  --grund: #1d1b18;
+  --grund-tief: #161412;
+  --flaeche: #26231f;
+  --text: #d9d1c4;
+  --text-stark: #f2ede5;
+  --text-leise: #ada496;
+  --linie: rgb(242 236 226 / 0.15);
+  --linie-zart: rgb(242 236 226 / 0.08);
+  --akzent: #eaa968;
+  --akzent-grund: rgb(234 169 104 / 0.12);
+  --knopf: #93c5ee;
+  --knopf-text: #161412;
+  --verweis: #93c5ee;
+  --markierung: rgb(234 169 104 / 0.28);
 }
 
 @media (min-width: 640px) {
@@ -290,17 +290,15 @@ pre {
 }
 
 .inhalt pre span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+}
+
+:root[data-thema="dunkel"] .inhalt pre span {
   color: var(--shiki-dark);
   font-style: var(--shiki-dark-font-style);
   font-weight: var(--shiki-dark-font-weight);
-}
-
-@media (prefers-color-scheme: light) {
-  .inhalt pre span {
-    color: var(--shiki-light);
-    font-style: var(--shiki-light-font-style);
-    font-weight: var(--shiki-light-font-weight);
-  }
 }
 
 /* Tabellen (Ergebnisse): ist eine Tabelle breiter als die Spalte, rollt nur sie selbst, nie die Seite */
