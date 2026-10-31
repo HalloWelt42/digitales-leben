@@ -9,7 +9,8 @@ Adresse `/artikel/<name>/`. Hier liegen nur freigegebene Artikel, denn jeder Pus
 Entwürfe entstehen außerhalb des Repos und kommen erst nach der Abnahme hierher.
 
 - Angaben oben: `titel`, `art` (grundlagen, erfahrung, anleitung, messung, vergleich), `zusammenfassung`, `datum`,
-  optional `frage`, Schlagworte (`thema`, `modell`, `faehigkeit`, `geraet`) und `nachtraege`; das Schema steht in
+  optional `frage`, `bild` mit `bildtext` (Artikelbild neben der Datei, oben im Artikel, in der Liste und als
+  Vorschaubild für soziale Netze), Schlagworte (`thema`, `modell`, `faehigkeit`, `geraet`) und `nachtraege`; das Schema steht in
   `src/content.config.ts`, die Arten in `src/lib/aufbau.ts`.
 - Messung und Vergleich haben eine feste Gliederung: eine `frage` und die Zwischenüberschriften `## Aufbau der
   Messung` bzw. `## Aufbau des Vergleichs`, `## Ergebnisse` (Tabelle), `## Erkenntnis`. Der Bau prüft sie. Die

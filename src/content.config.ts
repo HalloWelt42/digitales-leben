@@ -30,18 +30,25 @@ const nachtrag = z.object({
 
 const artikel = defineCollection({
   loader: glob({ base: "./src/content/artikel", pattern: "*.{md,mdx}" }),
-  schema: z
+  // bild: Artikelbild neben der Datei (./<name>.jpg), oben im Artikel, in der Artikelliste und als Vorschaubild für
+  // soziale Netze (og:image); bildtext beschreibt es (Alt-Text) und ist mit einem Bild Pflicht
+  schema: ({ image }) => z
     .object({
       titel: z.string().min(1),
       art: z.enum(artikelArten),
       // die Frage, die der Artikel beantwortet; Pflicht bei Arten mit fester Gliederung, sonst optional
       frage: z.string().min(1).optional(),
       zusammenfassung: z.string().min(1),
+      bild: image().optional(),
+      bildtext: z.string().min(1).optional(),
       datum: z.coerce.date(),
       schlagworte: schlagworte.default({ thema: [], modell: [], faehigkeit: [], geraet: [] }),
       nachtraege: z.array(nachtrag).default([]),
     })
     .superRefine((d, ctx) => {
+      if (d.bild && !d.bildtext) {
+        ctx.addIssue({ code: "custom", path: ["bildtext"], message: "Ein Artikelbild braucht einen bildtext (Alt-Text)" });
+      }
       if (artikelArt(d.art).gliederung && !d.frage) {
         ctx.addIssue({ code: "custom", path: ["frage"], message: `Ein Artikel der Art ${artikelArt(d.art).name} braucht eine Frage` });
       }

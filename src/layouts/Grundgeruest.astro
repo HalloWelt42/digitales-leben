@@ -13,14 +13,19 @@ import ThemaVorab from "../components/ThemaVorab.astro";
 import { SEITE } from "../lib/seite";
 import { pfad } from "../lib/pfad";
 import { VORGABE } from "../lib/thema";
+import { getImage } from "astro:assets";
 
 interface Props {
   titel?: string;
   beschreibung?: string;
   art?: "website" | "article";
+  // Vorschaubild für soziale Netze; wird als JPEG in 1200 px Breite ausgeliefert
+  bild?: ImageMetadata;
+  bildtext?: string;
 }
 
-const { titel, beschreibung = SEITE.beschreibung, art = "website" } = Astro.props;
+const { titel, beschreibung = SEITE.beschreibung, art = "website", bild, bildtext } = Astro.props;
+const vorschaubild = bild ? await getImage({ src: bild, width: Math.min(1200, bild.width), format: "jpg" }) : undefined;
 const voller = titel ? `${titel} | ${SEITE.name}` : SEITE.name;
 const kanonisch = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -38,6 +43,17 @@ const kanonisch = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:type" content={art} />
     <meta property="og:url" content={kanonisch} />
     <meta property="og:site_name" content={SEITE.name} />
+    {
+      vorschaubild && (
+        <>
+          <meta property="og:image" content={new URL(vorschaubild.src, Astro.site)} />
+          <meta property="og:image:width" content={String(vorschaubild.attributes.width)} />
+          <meta property="og:image:height" content={String(vorschaubild.attributes.height)} />
+          {bildtext && <meta property="og:image:alt" content={bildtext} />}
+          <meta name="twitter:card" content="summary_large_image" />
+        </>
+      )
+    }
     <ThemaVorab />
     <link rel="icon" type="image/png" sizes="32x32" href={pfad("/favicon-32.png")} />
     <link rel="icon" type="image/png" sizes="192x192" href={pfad("/icon-192.png")} />

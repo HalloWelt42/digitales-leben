@@ -278,6 +278,13 @@ pre {
   border-radius: var(--radius);
 }
 
+/* Artikelbild oben im Artikel (Angabe bild), über die volle Textbreite */
+.inhalt .artikelbild {
+  display: block;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
 /* Codeblöcke mit zwei Farbsätzen (astro.config.mjs); welcher gilt, entscheidet das Thema */
 .inhalt pre {
   padding: 1rem 1.1rem;
