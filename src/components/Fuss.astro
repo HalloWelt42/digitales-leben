@@ -5,6 +5,7 @@ import { NAVIGATION, SEITE } from "../lib/seite";
 import { SCHLAGWORT_ARTEN } from "../lib/aufbau";
 import { FASSUNG } from "../lib/fassung";
 import { pfad } from "../lib/pfad";
+import rss from "@fortawesome/fontawesome-free/svgs/solid/rss.svg?raw";
 ---
 
 <footer class="fuss">
@@ -22,6 +23,16 @@ import { pfad } from "../lib/pfad";
         <p class="etikett">Schlagworte</p>
         <ul>
           {SCHLAGWORT_ARTEN.map((a) => <li><a href={pfad(`/schlagworte/#${a.schluessel}`)}>{a.mehrzahl}</a></li>)}
+        </ul>
+      </nav>
+      <nav aria-label="Abonnieren">
+        <p class="etikett">Abonnieren</p>
+        <ul>
+          <li>
+            <a class="mit-symbol" href={pfad("/feed.xml")} title="Feed für jeden Feedleser: neue Artikel kommen von selbst">
+              <span class="symbol" set:html={rss} />Feed (RSS)
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -45,7 +56,7 @@ import { pfad } from "../lib/pfad";
 
   @media (min-width: 760px) {
     .spalten {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
       gap: 3rem;
     }
   }
@@ -76,6 +87,24 @@ import { pfad } from "../lib/pfad";
   nav a:hover {
     color: var(--text-stark);
     text-decoration: underline;
+  }
+
+  .mit-symbol {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .symbol {
+    display: inline-flex;
+    width: 0.85em;
+    color: var(--akzent);
+  }
+
+  .symbol :global(svg) {
+    width: 100%;
+    height: auto;
+    fill: currentColor;
   }
 
   .unten {

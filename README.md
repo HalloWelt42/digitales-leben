@@ -41,6 +41,15 @@ Maße stehen in `src/styles/grund.css`, die Farben der Codeblöcke in `codefarbe
 Jeder Push auf `main` baut die Seite und veröffentlicht sie (`.github/workflows/seite.yml`). Adresse und Unterpfad
 stehen in `astro.config.mjs`. Die Fassung kommt allein aus `version.json`; der Commit-Haken zählt sie hoch.
 
+Jeder Bau trägt einen Stand (`src/lib/stand.ts`, abrufbar unter `stand.json`). Offene Seiten, auch die als Web-App
+abgelegte, vergleichen ihn beim Öffnen, beim Zurückkehren und alle fünf Minuten und laden bei neuem Stand selbst neu
+(`src/components/Neuladen.astro`).
+
+## Abonnieren
+
+Neue Artikel stehen im Feed `feed.xml` (RSS, verlinkt im Fuß und im Kopf jeder Seite). In der Artikelliste tragen
+Artikel, die der Browser noch nicht kennt, die Marke "Neu" (`src/lib/gesehen.ts`, nur im Browser des Lesers gemerkt).
+
 ## Schriften
 
 Fraunces (Überschriften), Barlow (Text) und JetBrains Mono (Code, Etiketten), alle unter der SIL Open Font License,

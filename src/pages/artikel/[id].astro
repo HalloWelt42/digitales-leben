@@ -137,7 +137,16 @@ const art = artikelArt(data.art).name;
       }
     </aside>
   </div>
+  <span hidden data-gelesen={artikel.id}></span>
 </Grundgeruest>
+
+<script>
+  import { merken } from "../../lib/gesehen";
+
+  // geöffnet heißt bekannt: in der Artikelliste verliert er die Marke "neu"
+  const kennung = document.querySelector<HTMLElement>("[data-gelesen]")?.dataset.gelesen;
+  if (kennung) merken([kennung]);
+</script>
 
 <style>
   .koerper {

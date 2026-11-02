@@ -1,0 +1,50 @@
+---
+// Hält offene Seiten aktuell, auch die als Web-App auf dem Telefon abgelegte: Die Seite kennt ihren Stand und fragt
+// stand.json ungepuffert ab, beim Öffnen, wenn sie wieder nach vorn kommt und alle fünf Minuten. Ist der Server neuer,
+// lädt sie in den ersten Sekunden nach dem Öffnen sofort neu, später erst, wenn sie wieder nach vorn kommt (nie mitten
+// im Lesen). Je Stand nur ein Versuch, damit ein Zwischenspeicher, der noch alt liefert, keine Schleife auslöst.
+import { STAND, NEULADEN_SCHLUESSEL } from "../lib/stand";
+import { pfad } from "../lib/pfad";
+---
+
+<meta name="kiw-stand" content={STAND} />
+<script is:inline define:vars={{ adresse: pfad("/stand.json"), schluessel: NEULADEN_SCHLUESSEL }}>
+  const geoeffnet = Date.now();
+  const SOFORT_MS = 10000;
+  const TAKT_MS = 5 * 60 * 1000;
+  let neuer = null;
+
+  const eigener = () => document.querySelector('meta[name="kiw-stand"]')?.content;
+
+  function neuLaden(stand) {
+    try {
+      if (sessionStorage.getItem(schluessel) === stand) return;
+      sessionStorage.setItem(schluessel, stand);
+    } catch {
+      // ohne Speicher trotzdem einmal neu laden
+    }
+    location.reload();
+  }
+
+  async function pruefen() {
+    try {
+      const antwort = await fetch(`${adresse}?t=${Date.now()}`, { cache: "no-store" });
+      if (!antwort.ok) return;
+      const { stand } = await antwort.json();
+      if (!stand || stand === eigener()) return;
+      neuer = stand;
+      if (Date.now() - geoeffnet < SOFORT_MS) neuLaden(stand);
+    } catch {
+      // ohne Netz bleibt die Seite, wie sie ist
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (neuer) neuLaden(neuer);
+    else pruefen().then(() => neuer && neuLaden(neuer));
+  });
+  addEventListener("pageshow", (e) => e.persisted && pruefen().then(() => neuer && neuLaden(neuer)));
+  setInterval(pruefen, TAKT_MS);
+  pruefen();
+</script>

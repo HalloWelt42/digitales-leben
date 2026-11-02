@@ -33,7 +33,7 @@ for (const a of artikel) {
         )}
         <ol>
           {g.artikel.map((a) => (
-            <li>
+            <li data-artikel={a.id}>
               <article class:list={{ "mit-bild": a.data.bild }}>
                 {a.data.bild && (
                   <a class="vorschau" href={artikelPfad(a)} tabindex="-1" aria-hidden="true">
@@ -49,6 +49,7 @@ for (const a of artikel) {
                 </div>
                 <p class="angabe daten">
                   {istEntwurf(a) && <span class="entwurf">Entwurf</span>}
+                  <span class="neu" title="Neu seit deinem letzten Besuch">Neu</span>
                   <time datetime={datumIso(a.data.datum)}>{datumText(a.data.datum)}</time>
                   <span>{lesezeit(a)} Min</span>
                   {a.data.nachtraege.length > 0 && (
@@ -65,6 +66,16 @@ for (const a of artikel) {
     ))
   }
 </div>
+
+<script>
+  import { gesehene, merken } from "../lib/gesehen";
+
+  // Marke "neu" für Artikel, die dieser Browser noch nicht kennt; beim ersten Besuch gilt alles Gezeigte als bekannt
+  const eintraege = [...document.querySelectorAll<HTMLElement>("li[data-artikel]")];
+  const bekannt = gesehene();
+  if (bekannt === null) merken(eintraege.map((e) => e.dataset.artikel!));
+  else for (const e of eintraege) e.classList.toggle("ist-neu", !bekannt.has(e.dataset.artikel!));
+</script>
 
 <style>
   .gruppe {
@@ -182,6 +193,18 @@ for (const a of artikel) {
     gap: 0.2rem 1rem;
     margin: 0;
     white-space: nowrap;
+  }
+
+  .neu {
+    display: none;
+    color: var(--akzent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--sperrung);
+  }
+
+  .ist-neu .neu {
+    display: inline;
   }
 
   .entwurf {
