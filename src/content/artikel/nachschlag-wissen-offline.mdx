@@ -1,0 +1,224 @@
+---
+titel: "Wissen offline, aber bequem: ein eigener Leser für ZIM-Dateien"
+art: erfahrung
+frage: "Was fehlt den Offline-Archiven von Wikipedia, Stack Overflow und Co. im Alltag, und was lässt sich mit eigenen Mitteln daraus machen?"
+zusammenfassung: "Kiwix hat Wikipedia und tausende andere offene Inhalte als ZIM-Dateien offline verfügbar gemacht. Der Inhalt ist großartig, die Bedienung war es nie. Hier der Bau eines eigenen Lesers auf einem Raspberry Pi: dieselben Dateien als Grundlage, Ansichten beim Aufruf neu gesetzt, eigene Indizes, Bedeutungssuche, Notizen, Übersetzen, Vorlesen und Codebeispiele zum Ausprobieren. Mit Messwerten und dem, was noch offen ist."
+bild: "./nachschlag-wissen-offline.jpg"
+bildtext: "Illustration in den Farben der Seite: ein Leseraum bei Nacht mit Bücherregal, auf dem Tisch ein aufgeschlagenes, leicht leuchtendes Buch, daneben ein Globus und ein kleiner Rechner mit einer leuchtenden Lampe"
+datum: 2026-11-02
+schlagworte:
+  thema: ["Offline-Wissen", "ZIM", "Suche", "Selbst gehostet", "Werkzeuge"]
+  modell: ["BGE-M3"]
+  faehigkeit: ["Suchen", "Übersetzen", "Vorlesen", "Programmieren"]
+  geraet: ["Raspberry Pi 5", "MacBook Pro M4 Max"]
+nachtraege: []
+---
+
+import Zeichnung from "../../components/Zeichnung.astro";
+import lupe from "./nachschlag-wissen-offline-lupe.webp";
+import sandkasten from "./nachschlag-wissen-offline-sandkasten.webp";
+import lesezeichen from "./nachschlag-wissen-offline-lesezeichen.webp";
+import lautsprecher from "./nachschlag-wissen-offline-lautsprecher.webp";
+import laptop from "./nachschlag-wissen-offline-laptop.webp";
+import gleise from "./nachschlag-wissen-offline-gleise.webp";
+
+Auf meinem Raspberry Pi liegen die komplette deutsche und englische Wikipedia, ganz Stack Overflow, zwei
+PHP-Handbücher und ein paar kleinere Sammlungen: 7 Dateien, rund 291 GB, zusammen 42,27 Millionen Seiten. Das alles
+gibt es fertig zum Herunterladen, als ZIM-Dateien aus dem Katalog des Kiwix-Projekts. Was es nicht fertig gibt, ist
+ein Leser, mit dem man darin gern arbeitet. Also habe ich mir einen gebaut.
+
+Im Prinzip ist das eine Neuauflage von Kiwix, nur unter eigener Flagge und mit eigenen Mitteln umgesetzt. Die Dateien
+bleiben unverändert die Grundlage. Alles andere, also Ansicht, Suche und alles, was man beim Lesen tun will, entsteht
+neu.
+
+**Das Wichtigste in Kürze**
+
+- **Die Inhalte sind das Pfund, die Bedienung war die Schwäche.** Die eingebaute Volltextsuche findet zu "Füchse in
+  Städten" 2.000 Treffer. Ganz oben stehen ein Gemälde von Franz Marc, ein Handballspieler und zwei
+  Eishockeyvereine. Der Rotfuchs kommt auf Platz 7.
+- **Dieselben Dateien, neu gelesen:** Die Ansicht wird beim Aufruf live umgebaut, je Art des Inhalts mit eigenen
+  Regeln. Eine Enzyklopädie bekommt einen Steckbrief, ein Handbuch eine Signatur, Frage und Antwort Stimmen und
+  Schlagwörter.
+- **Suche, die mehr kann als Stichworte:** eigener Volltextindex je Quelle, dazu Bedeutungssuche über Einbettungen
+  mit BGE-M3. Antwortet die nicht, sucht der Index allein weiter und sagt es.
+- **Arbeiten statt nur lesen:** Notizen und Markierungen an Textstellen, Zitieren, Übersetzen mit sichtbarer
+  Markierung, Vorlesen, und Codebeispiele lassen sich in einer Sandbox ausführen und Schritt für Schritt debuggen.
+- **Der Kern läuft allein,** mit nichts als einem Ordner voller ZIM-Dateien. Alles mit KI ist eine Anbindung, die
+  man zuschaltet. Fehlt sie, verschwindet die Funktion, statt einen Fehler zu zeigen.
+- **Das Projekt ist offen:** [HalloWelt42/nachschlag](https://github.com/HalloWelt42/nachschlag).
+
+## Ausgangslage
+
+![Logo des Kiwix-Projekts, ein stilisierter Kiwi-Vogel, daneben ein Pfeil zum bunten Globus von Nachschlag](./nachschlag-wissen-offline-kiwix.webp)
+
+Kiwix ist ein offenes Projekt, das seit 2006/2007 Wikipedia ohne Internet lesbar macht. Gedacht war es vor allem für
+Gegenden mit schlechtem oder teurem Netz und für Schulen in Entwicklungsländern. Auf den Rechnern der Initiative
+"One Laptop per Child", dem sogenannten 100-Dollar-Laptop, kam die Wikipedia mit Kiwix auf die Geräte.
+
+Heute ist daraus weit mehr geworden. Der Katalog bündelt die Inhalte vieler offener Plattformen und Foren und sichert
+ihr Wissen für den Zugriff ohne Netz: Enzyklopädien, Wörterbücher, Programmierhandbücher, Frage-und-Antwort-Archive,
+gespiegelte Webseiten. Am 1. November 2026 standen dort 3.656 Bücher, davon 311 auf Deutsch und 1.309 auf Englisch.
+Alles liegt im ZIM-Format vor: eine einzige Datei je Buch, mit allen Seiten, Bildern und einem eingebauten Titel- und
+Volltextindex.
+
+<Zeichnung bild={laptop} text="Zeichnung: ein robuster Laptop mit aufgeklapptem Deckel, vor dem Bildschirm schwebt ein Globus" />
+
+Das Format ist gut. Die Größen zeigen, wie viel darin steckt:
+
+| Buch | Seiten | Größe |
+|---|---|---|
+| Wikipedia Deutsch, mit Bildern (Stand Januar 2026) | 3,2 Mio Artikel | 52,4 GB |
+| Wikipedia Englisch, mit Bildern (Stand Februar 2026) | 8,4 Mio Artikel | 124,0 GB |
+| Stack Overflow (Stand Juli 2026) | 30,6 Mio Fragen | 114,9 GB |
+| PHP-Handbuch, zwei Fassungen | 19.159 Seiten | 40 MB |
+
+Das Problem war von Anfang an die Bedienung. Brauchbar ist sie, komfortabel nicht. Wer im Archiv etwas sucht, bekommt
+eine lange Liste mit Wortzählung, aber ohne Gespür dafür, was gemeint ist. Englische Quellen bleiben englisch.
+Notizen, Markierungen oder einen Merkzettel gibt es im Webleser nicht. Eine Frage-Antwort-Seite sieht aus wie eine
+gespeicherte Webseite, weil sie genau das ist.
+
+![Suchergebnis des mitgelieferten Lesers zu "Füchse in Städten": 2.000 Treffer, oben ein Gemälde, ein Handballspieler und Eishockeyvereine, der Rotfuchs erst an siebter Stelle](./nachschlag-wissen-offline-original-suche.webp)
+
+## Was entstanden ist
+
+<Zeichnung bild={gleise} text="Zeichnung: zwei Stapel derselben Bücher, einer durcheinander, einer ordentlich im Regal" />
+
+### Die Dateien bleiben, die Ansicht entsteht neu
+
+Grundlage sind alle ZIM-Dateien eines Ordners. Nichts wird vorab umgewandelt oder kopiert. Beim Aufruf einer Seite
+liest der Leser sie aus der Datei (gemessen rund 12 ms für einen Wikipedia-Artikel auf dem Pi) und baut sie live um.
+
+Wie umgebaut wird, hängt von der Art des Inhalts ab. Jede Quelle mit eigener Grundstruktur bekommt einen eigenen
+Baustein mit eigenen Methoden und eigenem Layout. Erkannt wird die Art an den Angaben in der Datei, nie am Dateinamen.
+Heute gibt es drei solche Bausteine:
+
+- **Enzyklopädie:** Inhaltsverzeichnis an der Seite, der Steckbrief als eigener Kasten, Bilder neu gesetzt, große
+  Schrift, drei umschaltbare Ansichten.
+- **Dokumentation:** Signatur, verfügbare Fassungen, Rubrik und Nachbarn im Kopf, Code im eigenen Schema für hell und
+  dunkel, ein Fassungsfilter ("nur, was es in PHP 8.3 gibt").
+- **Frage und Antwort:** Stimmen, Antworten, akzeptierte Lösung, Schlagwörter, verwandte Fragen und ein Register
+  aller Autoren.
+
+Alles, wofür es noch keinen Baustein gibt, öffnet in der Originalansicht, abgeschirmt in einem Rahmen. Damit ist
+jede ZIM-Datei lesbar, auch eine, die heute noch niemand kennt.
+
+![Der Wikipedia-Artikel Rotfuchs im eigenen Leser: Werkzeugleiste mit Merken, Notiz, Thema, Original, Zufall und Recherche, der Text mit Bildern und rechts eine Wissensleiste mit dem Steckbrief](./nachschlag-wissen-offline-artikel.webp)
+
+![Die PHP-Funktion array_map: Kasten mit Signatur, verfügbaren Fassungen und Quelle, links das Inhaltsverzeichnis mit allen Beispielen und den Nachbarn in der Rubrik Array](./nachschlag-wissen-offline-handbuch.webp)
+
+![Eine Frage aus Stack Overflow: Kasten mit 27.527 Stimmen, 26 Antworten, Schlagwörtern und verwandten Fragen, links die Antworten nach Stimmen](./nachschlag-wissen-offline-frage.webp)
+
+Auf dem Weg hat sich gezeigt, wie unterschiedlich die Dateien gebaut sind. Die Bilder der großen Wikipedia-Ausgabe
+sind nur Vorschaubilder mit 250 bis 330 Pixeln Breite. Interne Verweise ohne Ziel gibt es wenige (0,3 bis 0,7 % in
+einer Stichprobe), und fast alle davon sind Koordinaten statt Artikel. Tot für den Leser sind vor allem die Verweise
+ins Netz. Der Leser zeigt sie darum nicht im Text, sondern gesammelt unter dem Artikel.
+
+### Suche: Index immer, Bedeutung dazu
+
+<Zeichnung bild={lupe} text="Zeichnung: eine Lupe auf einem Stapel aus drei dicken Büchern" />
+
+Der eingebaute Index einer ZIM-Datei ist schnell (rund 11 ms auf dem Pi), aber er kennt nur Wörter. Darum baut der
+Leser für jede Quelle einen eigenen Volltextindex (SQLite FTS5), passend zur Art des Inhalts: bei Handbüchern zuerst
+der genaue Funktionsname, dann der Wortanfang, dann der Text. Wer "str_rep" tippt, findet str_repeat und
+str_replace. Bei Frage und Antwort zählen Titel, Schlagwörter, Frage und die akzeptierte Antwort.
+
+Gerechnet werden diese Indizes nicht auf dem Pi, sondern auf einem Mac. Der holt sich den Auftrag beim Pi ab, liest
+das Buch über eine Freigabe im Heimnetz, baut fortsetzbar und lädt das Ergebnis in Stücken hoch. Ausgetauscht wird
+erst nach geprüfter Prüfsumme. Fällt das WLAN aus oder geht der Mac schlafen, geht es später an derselben Stelle
+weiter.
+
+Dazu kommt die Bedeutungssuche. Die deutsche Wikipedia wird dafür in Abschnitte zerlegt und mit dem Modell BGE-M3
+eingebettet. Eine Frage in eigenen Worten findet dann den Abschnitt, der sie beantwortet, auch wenn kein Wort
+übereinstimmt, und springt direkt dorthin. Beide Wege laufen gleichzeitig, die Ergebnisse werden nach Rang gemischt.
+Antwortet die Bedeutungssuche nicht rechtzeitig, steht nur das Ergebnis des Index da, mit einem Hinweis.
+
+![Suche nach array_map über alle sieben Quellen: je Quelle ein Stand mit Trefferzahl, die Treffer nach Quelle gruppiert, rechts eine Vorschau mit den Abschnitten des Artikels](./nachschlag-wissen-offline-suche.webp)
+
+Die Suche kennt außerdem ihren Ort. Im Buch sucht sie zuerst im Buch, auf der Startseite in allen. Jede Quelle zeigt
+ihren eigenen Stand (sucht, fertig mit n Treffern, keine Antwort), statt dass eine Seite einfach lädt. Sucht man auf
+Deutsch und sind englische Quellen dabei, übersetzt ein lokales Sprachmodell die Frage mit. Fachbegriffe, Code und
+Bezeichner bleiben dabei unverändert.
+
+### Lesen, markieren, notieren
+
+<Zeichnung bild={lesezeichen} text="Zeichnung: ein aufgeschlagenes Buch mit Lesebändchen und einer kleinen Bleistiftnotiz am Rand" />
+
+Was man beim Lesen tun will, hängt an der Textstelle, nicht am Artikel: markieren, eine Notiz anheften (auch mit
+Bildschirmfoto aus der Zwischenablage), zitieren in den Formen einfach, APA, DIN und BibTeX. Ein Merkzettel, ein
+Verlauf über alle Geräte und der Lesestand ("noch 5 Minuten") kommen dazu.
+
+Eigene Themen sammeln Artikel aus allen Quellen. Ein Thema darf mit einer gespeicherten Suche wachsen, aber nur als
+Vorschlag: Neues landet erst nach "Übernehmen" im Thema, nie von selbst. Ein Recherchemodus sammelt die Quellen gleich
+mit den Notizen.
+
+Gespeichert wird das nicht im Browser, sondern je Konto auf dem Pi, darum sind Merkzettel und Verlauf auf jedem Gerät
+gleich. Angemeldet wird mit dem Konto meiner eigenen kleinen Cloud im Heimnetz. Dort liegen auch die Bilder an Notizen,
+die Ergebnisse der Nachtarbeit sowie die Bücher und die Indizes als Ordner, sichtbar und gesichert wie jede andere
+Datei.
+
+### Übersetzen und Vorlesen
+
+<Zeichnung bild={lautsprecher} text="Zeichnung: ein aufgeschlagenes Buch, über dessen Seiten eine Tonkurve ausschlägt" />
+
+Ein englischer Artikel lässt sich ins Deutsche übersetzen, Abschnitt für Abschnitt, vom selben lokalen Sprachmodell.
+Übersetzt wird nur der Text. Aufbau, Formeln, Tabellen, Code und Verweise bleiben, wie sie sind. Eine Übersetzung ist
+immer sichtbar als solche markiert, das Original lässt sich umschalten. Auch eine einzelne markierte Stelle lässt sich
+übersetzen. Gespeichert wird jede Übersetzung einmal, beim zweiten Lesen ist sie sofort da.
+
+Vorlesen läuft über eine lokale Sprachausgabe, abschnittsweise mit Mitlese-Markierung. Ein Satz ist in rund 0,8 s
+fertig, für 3,2 s Ton. Was sich lange hinzieht, etwa ein ganzes Thema zu übersetzen oder zu vertonen, wartet als
+Auftrag aufs Nachtfenster.
+
+### Codebeispiele ausprobieren
+
+<Zeichnung bild={sandkasten} text="Zeichnung: ein Sandhaufen mit einer Spielzeugschaufel und einer geschwungenen Linie im Sand" />
+
+Im Handbuch hat jedes Beispiel neben "Kopieren" einen Knopf "Ausprobieren" (nur am Rechner, nicht am Telefon). Er
+öffnet eine Ebene mit einem vollwertigen Editor und einer Kopie des Beispiels. Das Original bleibt unverändert,
+"Zurücksetzen" holt es wieder, "Behalten" legt die Kopie als eigenes Beispiel unter den Artikel.
+
+Ausgeführt wird in einer Sandbox auf dem Pi: ein Container ohne Netz, nur lesend, mit 5 Sekunden und 64 MB als Grenze.
+Heute gibt es PHP (acht Fassungen von 5.6 bis 8.5, wählbar), Python und JavaScript. Der Debugger zeichnet den ganzen
+Lauf auf. Darum geht jeder Schritt vor und zurück, mit Haltepunkten, Aufrufstapel und den Werten aller Variablen. Für
+PHP steuert ihn Xdebug Zeile für Zeile.
+
+## Was sich bewährt hat
+
+- **Die Dateien nicht anfassen.** Alles Eigene liegt daneben: Indizes, Notizen, Übersetzungen. Eine neue Fassung
+  eines Buchs lässt sich laden und nach Bestätigung umschalten, die alte bleibt im Archiv.
+- **Je Art des Inhalts ein eigener Baustein.** Keine Wikipedia-Sonderfälle in Suche, Notizen oder Oberfläche. Ein
+  neues Buch mit neuer Struktur braucht einen neuen Baustein und sonst nichts. Bis dahin hilft die Originalansicht.
+- **Der Kern hängt von nichts ab.** Ohne Bedeutungssuche gibt es den Index, ohne Sprachmodell das Original, ohne
+  Sprachausgabe keinen Vorleseknopf. Nichts davon bricht den Leser.
+- **Rechnen dort, wo Leistung ist.** Der Pi liefert nur Daten. Indizes, Einbettungen, Übersetzungen und Sprache
+  rechnet der Mac, und der Pi ruft ihn nie an, sondern holt die Ergebnisse ab.
+- **Eine offene Schnittstelle für alles.** Die Oberfläche nutzt nur die dokumentierte Schnittstelle, die auch jede
+  andere App im Haus benutzen kann.
+
+## Was ich anders machen würde
+
+- **Die Suche früher als Gesamtplan denken.** Am Anfang gab es eine Suche für alle Bücher. Erst später zeigte sich,
+  dass ein Handbuch, eine Enzyklopädie und ein Forum je ein eigenes Suchprofil brauchen. Das hätte ich gleich als
+  Schnittstelle je Art angelegt.
+- **Die Größen ernster nehmen.** 30,6 Millionen Fragen sind eine andere Liga als 7.555 Handbuchseiten. Der eigene
+  Index für Stack Overflow startet darum erst, wenn eine Grenze von 5 GB bewusst angehoben wird.
+
+## Grenzen und Offenes
+
+- **Die Bedeutungssuche ist nicht fertig.** Stand 2. November 2026 sind 1,56 Mio der 3,2 Mio deutschen Artikel
+  eingebettet (7,4 Mio Abschnitte), bei rund 800 Abschnitten pro Minute. Bis zum Rest dauert es nach grober Schätzung
+  noch eine Woche. Englisch und Stack Overflow haben keine Einbettungen, dort sucht nur der Index.
+- **Bilder in voller Größe** lassen sich über die Bildablage von Wikimedia nachladen, ein Bild alle paar Sekunden,
+  mit Lizenz und Urheber. Bei 4,67 Mio Medien allein in der deutschen Ausgabe geht das nur nach Vorrang.
+- **Gespiegelte Webseiten** sind die schwierigste Art: Jede Seite braucht eigene Regeln. Dafür gibt es noch keinen
+  Baustein, sie laufen in der Originalansicht.
+- **Neue Bausteine** entstehen erst, wenn ein Inhalt sie braucht. Wörterbücher, Reiseführer und Videos stehen noch aus.
+
+## Bildnachweis
+
+- Logo des Kiwix-Projekts: Wikimedia Commons, Datei "Kiwix logo v3.svg", Urheber "The other Kiwix guy", Lizenz
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de). Das Logo ist eine Marke des Kiwix-Projekts.
+- Inhalte in den Bildschirmfotos: Wikipedia-Artikel "Rotfuchs" und die Fotos darin ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de)
+  und jeweilige Lizenz der Bilddatei), PHP-Dokumentation ([CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)),
+  Frage und Antworten von Stack Overflow ([CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/deed.de)).
+- Illustration und Zeichnungen: erzeugt mit MOSS-Image.
