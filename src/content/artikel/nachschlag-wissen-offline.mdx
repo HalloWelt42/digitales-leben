@@ -1,7 +1,7 @@
 ---
 titel: "Ein eigener Reader für ZIM-Dateien: Wikipedia und Stack Overflow offline auf dem Raspberry Pi"
 art: erfahrung
-frage: "Was fehlt den Offline-Archiven von Wikipedia, Stack Overflow und Co. im Alltag, und was lässt sich mit eigenen Mitteln daraus machen?"
+frage: "Was fehlt den Offline-Archiven von Wikipedia, Stack Overflow und Co. im Alltag, und wie lässt sich das mit eigenen Mitteln ergänzen?"
 zusammenfassung: "Kiwix stellt Wikipedia und tausende andere offene Inhalte als ZIM-Dateien zum Download bereit. Der mitgelieferte Reader zeigt die Seiten an und bietet eine einfache Suche. Ich habe auf einem Raspberry Pi einen eigenen gebaut: Er liest dieselben Dateien, setzt die Ansicht je Inhaltsart neu und bringt eigene Indizes, semantische Suche, Notizen, Übersetzen, Vorlesen und ausführbare Codebeispiele mit. Mit Messwerten und offenen Punkten."
 bild: "./nachschlag-wissen-offline.jpg"
 bildtext: "Illustration in den Farben der Seite: ein Leseraum bei Nacht mit Bücherregal, auf dem Tisch ein aufgeschlagenes, leicht leuchtendes Buch, daneben ein Globus und ein kleiner Rechner mit einer leuchtenden Lampe"
@@ -48,7 +48,7 @@ Grundlage. Ansicht, Suche und alle Werkzeuge zum Lesen sind neu geschrieben.
 
 ![Logo des Kiwix-Projekts, ein stilisierter Kiwi-Vogel, daneben ein Pfeil zum bunten Globus von Nachschlag](./nachschlag-wissen-offline-kiwix.webp)
 
-Kiwix ist ein offenes Projekt, das seit 2006/2007 Wikipedia ohne Internet lesbar macht. Gedacht war es vor allem für
+Kiwix ist ein offenes Projekt, mit dem sich Wikipedia seit 2006/2007 ohne Internet lesen lässt. Gedacht war es vor allem für
 Gegenden mit schlechtem oder teurem Netz und für Schulen in Entwicklungsländern. Auf den Rechnern der Initiative
 "One Laptop per Child", dem sogenannten 100-Dollar-Laptop, kam die Wikipedia mit Kiwix auf die Geräte.
 
@@ -186,7 +186,7 @@ und den Werten aller Variablen. Bei PHP steuert ihn Xdebug Zeile für Zeile.
 - **Eine offene Schnittstelle für alles.** Die Oberfläche nutzt nur die dokumentierte Schnittstelle, und die steht
   jeder anderen App im Haus genauso offen.
 
-## Was ich anders machen würde
+## Was ich heute anders planen würde
 
 - **Die Suche von Anfang an je Inhaltsart planen.** Zuerst gab es eine Suche für alle Bücher. Später zeigte sich,
   dass Handbuch, Enzyklopädie und Forum je ein eigenes Suchprofil brauchen. Heute würde ich gleich eine Schnittstelle
