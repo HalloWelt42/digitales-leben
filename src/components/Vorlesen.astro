@@ -1,0 +1,614 @@
+---
+// Vorlesen eines Artikels: Knopf in der Angabenzeile, sobald eine Vorlesung da ist (public/vorlesen/<kennung>.json
+// und .mp3, siehe lib/vorlesen.ts), und eine Leiste unter der Kopfleiste, die beim Lesen stehen bleibt. Der Ton wird
+// erst beim ersten Antippen geladen. Während die Stimme spricht, ist der gesprochene Block hervorgehoben, und die
+// Seite rollt mit (Mitlesen); wer selbst rollt, schaltet das Mitlesen ab, der Knopf "Mitlesen" holt es zurück.
+import fs from "node:fs";
+import path from "node:path";
+import { VORLESEN_ORDNER } from "../lib/vorlesen-regeln.mjs";
+import type { Vorlesung } from "../lib/vorlesen";
+import { pfad } from "../lib/pfad";
+import { SEITE } from "../lib/seite";
+import lautsprecher from "@fortawesome/fontawesome-free/svgs/solid/volume-high.svg?raw";
+import spielen from "@fortawesome/fontawesome-free/svgs/solid/play.svg?raw";
+import anhalten from "@fortawesome/fontawesome-free/svgs/solid/pause.svg?raw";
+import zurueck from "@fortawesome/fontawesome-free/svgs/solid/backward-step.svg?raw";
+import vor from "@fortawesome/fontawesome-free/svgs/solid/forward-step.svg?raw";
+import mitlesen from "@fortawesome/fontawesome-free/svgs/solid/arrows-down-to-line.svg?raw";
+import leise from "@fortawesome/fontawesome-free/svgs/solid/volume-low.svg?raw";
+import schliessen from "@fortawesome/fontawesome-free/svgs/solid/xmark.svg?raw";
+
+interface Props {
+  kennung: string;
+  titel: string;
+}
+
+const { kennung, titel } = Astro.props;
+const datei = path.join(process.cwd(), "public", VORLESEN_ORDNER, `${kennung}.json`);
+const v: Vorlesung | undefined = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf-8")) : undefined;
+const daten = v && {
+  ...v,
+  quelle: pfad(`/${VORLESEN_ORDNER}/${v.datei}`),
+  titel,
+  autor: SEITE.autor,
+  seite: SEITE.name,
+};
+const minuten = v ? Math.max(1, Math.round(v.dauer / 60)) : 0;
+const groesse = v ? (v.bytes / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 1 }) : "";
+---
+
+{
+  daten && (
+    <span class="vorlesen" data-vorlesung={JSON.stringify(daten)}>
+      <button type="button" class="knopf" hidden>
+        <span class="symbol" set:html={lautsprecher} aria-hidden="true" />
+        <span>Vorlesen</span>
+        <span class="leise">
+          {minuten} Min, {groesse} MB
+        </span>
+      </button>
+      <div class="leiste" role="region" aria-label="Vorlesen" hidden>
+        <div class="rahmen innen">
+          <div class="tasten links">
+            <button type="button" class="taste zurueck" aria-label="Abschnitt zurück" set:html={zurueck} />
+            <button type="button" class="taste spielen" aria-label="Abspielen">
+              <span class="an" set:html={spielen} />
+              <span class="aus" set:html={anhalten} />
+            </button>
+            <button type="button" class="taste vor" aria-label="Nächster Abschnitt" set:html={vor} />
+          </div>
+          <input type="range" class="lauf" min="0" max={String(Math.ceil(daten.dauer))} step="1" value="0" aria-label="Stelle in der Vorlesung" />
+          <span class="zeit">0:00</span>
+          <span class="nur-abschnitt" hidden>nur dieser Abschnitt</span>
+          <label class="lautstaerke" hidden>
+            <span class="symbol" set:html={leise} aria-hidden="true" />
+            <input type="range" min="0" max="1" step="0.05" value="1" aria-label="Lautstärke" />
+          </label>
+          <div class="tasten rechts">
+            <button type="button" class="taste tempo" aria-label="Tempo">1x</button>
+            <button type="button" class="taste mitlesen" aria-pressed="true" title="Mitlesen: die Seite folgt der Stimme" set:html={mitlesen} />
+            <button type="button" class="taste schliessen" aria-label="Vorlesen beenden" set:html={schliessen} />
+          </div>
+        </div>
+      </div>
+      <template class="abschnitt-symbol" set:html={lautsprecher} />
+    </span>
+  )
+}
+
+<script>
+  import { VORLESEN_ATTRIBUT } from "../lib/vorlesen-regeln.mjs";
+  import { pruefwert, type Vorlesung } from "../lib/vorlesen";
+
+  interface Daten extends Vorlesung {
+    quelle: string;
+    titel: string;
+    autor: string;
+    seite: string;
+  }
+
+  const TEMPI = [1, 1.25, 1.5, 1.75, 0.75];
+  const AKTIV = "vorlesen-aktiv";
+  // zurück an den Anfang des laufenden Abschnitts, wenn er schon so lange läuft; sonst zum vorigen
+  const ZURUECK_SCHWELLE_S = 2;
+  // gewählte Lautstärke je Browser (nur Bequemlichkeit, geht nirgends hin)
+  const LAUTSTAERKE_SCHLUESSEL = "kiw-vorlesen-lautstaerke";
+  // Zwischenüberschriften, die ein eigenes Symbol zum Vorlesen nur ihres Abschnitts bekommen
+  const ABSCHNITT_EBENEN = /^H[2-4]$/;
+  // Tasten, mit denen jemand selbst rollt
+  const ROLLTASTEN = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
+
+  function block(n: number): HTMLElement | null {
+    return n < 0 ? document.querySelector("h1") : document.querySelector(`[${VORLESEN_ATTRIBUT}="${n}"]`);
+  }
+
+  // Die Vorlesung gehört zu genau diesem Text: gleich viele Blöcke, jeder mit passendem Prüfwert
+  function passt(d: Daten): boolean {
+    const bloecke = document.querySelectorAll(`[${VORLESEN_ATTRIBUT}]`).length;
+    if (bloecke !== d.abschnitte.filter((a) => a.n >= 0).length) return false;
+    return d.abschnitte.every((a) => pruefwert(block(a.n)?.textContent ?? "") === a.pruef);
+  }
+
+  function zeit(s: number): string {
+    const ganz = Math.max(0, Math.floor(s));
+    return `${Math.floor(ganz / 60)}:${String(ganz % 60).padStart(2, "0")}`;
+  }
+
+  function einrichten(wurzel: HTMLElement): void {
+    const d = JSON.parse(wurzel.dataset.vorlesung!) as Daten;
+    if (!passt(d)) {
+      console.info("Vorlesen: die Vorlesung passt nicht zu diesem Stand des Texts");
+      return;
+    }
+    const knopf = wurzel.querySelector<HTMLButtonElement>(".knopf")!;
+    const leiste = wurzel.querySelector<HTMLElement>(".leiste")!;
+    const taste = (name: string) => leiste.querySelector<HTMLButtonElement>(`.${name}`)!;
+    const lauf = leiste.querySelector<HTMLInputElement>(".lauf")!;
+    const anzeige = leiste.querySelector<HTMLElement>(".zeit")!;
+    const ende = zeit(d.dauer);
+    knopf.hidden = false;
+
+    const hinweisAbschnitt = leiste.querySelector<HTMLElement>(".nur-abschnitt")!;
+    let ton: HTMLAudioElement | null = null;
+    let aktuell = -1;
+    let folgen = true;
+    // Ende des Abschnitts, der allein vorgelesen wird (Symbol an einer Zwischenüberschrift); null: alles
+    let nurBis: number | null = null;
+
+    const nurAbschnitt = (bis: number | null) => {
+      nurBis = bis;
+      hinweisAbschnitt.hidden = bis === null;
+    };
+
+    // die Leiste sitzt unter der Kopfleiste, deren Höhe am Telefon mit dem Umbruch wächst
+    const kopf = document.querySelector<HTMLElement>("body > header");
+    const anKopfLegen = () => {
+      if (kopf) leiste.style.top = `${Math.round(kopf.getBoundingClientRect().bottom)}px`;
+    };
+    window.addEventListener("resize", anKopfLegen);
+
+    const stelle = (t: number) => {
+      let i = 0;
+      while (i + 1 < d.abschnitte.length && d.abschnitte[i + 1].start <= t) i++;
+      return i;
+    };
+
+    // Rollt den Block unter die Leiste, wenn er nicht gut im Blick ist; der Browser rechnet das Ziel selbst (auch
+    // wenn noch ein Rollen läuft), der Abstand steht als scroll-margin am Block
+    const sichtbar = (el: HTMLElement) => {
+      const oben = leiste.getBoundingClientRect().bottom;
+      const r = el.getBoundingClientRect();
+      if (r.top >= oben && r.top <= window.innerHeight * 0.6) return;
+      document.documentElement.style.setProperty("--vorlesen-abstand", `${Math.round(oben + window.innerHeight * 0.08)}px`);
+      el.scrollIntoView({ block: "start", behavior: "smooth" });
+    };
+
+    // `neu`: auch denselben Block wieder in den Blick holen (nach einem Sprung)
+    const hervorheben = (i: number, neu = false) => {
+      if (i === aktuell && !neu) return;
+      if (aktuell >= 0) block(d.abschnitte[aktuell].n)?.classList.remove(AKTIV);
+      aktuell = i;
+      const el = block(d.abschnitte[i].n);
+      if (!el) return;
+      if (d.abschnitte[i].n >= 0) el.classList.add(AKTIV);
+      if (folgen) sichtbar(el);
+    };
+
+    const folgenSetzen = (an: boolean) => {
+      folgen = an;
+      taste("mitlesen").setAttribute("aria-pressed", String(an));
+      if (an && aktuell >= 0) {
+        const el = block(d.abschnitte[aktuell].n);
+        if (el) sichtbar(el);
+      }
+    };
+
+    const holen = (): HTMLAudioElement => {
+      if (ton) return ton;
+      const t = new Audio();
+      t.preload = "none";
+      t.src = d.quelle;
+      t.addEventListener("timeupdate", () => {
+        if (nurBis !== null && t.currentTime >= nurBis) {
+          t.pause();
+          nurAbschnitt(null);
+        }
+        lauf.value = String(t.currentTime);
+        anzeige.textContent = `${zeit(t.currentTime)} / ${ende}`;
+        hervorheben(stelle(t.currentTime));
+        // hat sich die Seite verschoben (Bilder, Schrift), holt der nächste Takt den Block zurück in den Blick
+        if (folgen && aktuell >= 0) {
+          const el = block(d.abschnitte[aktuell].n);
+          if (el) sichtbar(el);
+        }
+      });
+      const zustand = () => leiste.classList.toggle("spielt", !t.paused);
+      t.addEventListener("play", zustand);
+      t.addEventListener("pause", zustand);
+      t.addEventListener("ended", zustand);
+      t.volume = lautstaerke();
+      ton = t;
+      medienSitzung(t);
+      return t;
+    };
+
+    const springen = (sekunden: number) => {
+      const t = holen();
+      t.currentTime = Math.min(Math.max(0, sekunden), d.dauer);
+      hervorheben(stelle(t.currentTime), true);
+    };
+
+    const abschnittZurueck = () => {
+      const t = holen();
+      const i = stelle(t.currentTime);
+      const ziel = t.currentTime - d.abschnitte[i].start > ZURUECK_SCHWELLE_S ? i : Math.max(0, i - 1);
+      springen(d.abschnitte[ziel].start);
+    };
+
+    const abschnittVor = () => {
+      const i = stelle(holen().currentTime);
+      if (i + 1 < d.abschnitte.length) springen(d.abschnitte[i + 1].start);
+    };
+
+    const umschalten = () => {
+      const t = holen();
+      if (t.paused) void t.play();
+      else t.pause();
+    };
+
+    function medienSitzung(t: HTMLAudioElement): void {
+      if (!("mediaSession" in navigator)) return;
+      navigator.mediaSession.metadata = new MediaMetadata({ title: d.titel, artist: d.autor, album: d.seite });
+      const handlungen: [MediaSessionAction, MediaSessionActionHandler][] = [
+        ["play", () => void t.play()],
+        ["pause", () => t.pause()],
+        ["previoustrack", abschnittZurueck],
+        ["nexttrack", abschnittVor],
+        ["seekto", (e) => e.seekTime !== undefined && springen(e.seekTime)],
+      ];
+      for (const [handlung, aufruf] of handlungen) {
+        try {
+          navigator.mediaSession.setActionHandler(handlung, aufruf);
+        } catch {
+          // ältere Browser kennen nicht jede Handlung
+        }
+      }
+    }
+
+    // Lautstärke: manche Telefone erlauben sie Webseiten nicht (dort gilt die Taste am Gerät); dann kein Regler
+    const regler = leiste.querySelector<HTMLLabelElement>(".lautstaerke")!;
+    const schieber = regler.querySelector<HTMLInputElement>("input")!;
+    function lautstaerke(): number {
+      try {
+        const wert = Number(localStorage.getItem(LAUTSTAERKE_SCHLUESSEL) ?? "1");
+        return Number.isFinite(wert) ? Math.min(1, Math.max(0, wert)) : 1;
+      } catch {
+        return 1;
+      }
+    }
+    const probe = new Audio();
+    probe.volume = 0.5;
+    if (probe.volume === 0.5) {
+      regler.hidden = false;
+      schieber.value = String(lautstaerke());
+      schieber.addEventListener("input", () => {
+        holen().volume = Number(schieber.value);
+        try {
+          localStorage.setItem(LAUTSTAERKE_SCHLUESSEL, schieber.value);
+        } catch {
+          // ohne Speicher gilt die Wahl nur für diese Seite
+        }
+      });
+    }
+
+    const oeffnen = () => {
+      leiste.hidden = false;
+      anKopfLegen();
+      folgenSetzen(true);
+    };
+
+    knopf.addEventListener("click", () => {
+      oeffnen();
+      nurAbschnitt(null);
+      void holen().play();
+    });
+    taste("spielen").addEventListener("click", umschalten);
+    // wer selbst springt, will weiterhören: die Grenze eines einzelnen Abschnitts fällt dann weg
+    taste("zurueck").addEventListener("click", () => {
+      nurAbschnitt(null);
+      abschnittZurueck();
+    });
+    taste("vor").addEventListener("click", () => {
+      nurAbschnitt(null);
+      abschnittVor();
+    });
+    taste("mitlesen").addEventListener("click", () => folgenSetzen(!folgen));
+    taste("tempo").addEventListener("click", () => {
+      const t = holen();
+      const neu = TEMPI[(TEMPI.indexOf(t.playbackRate) + 1) % TEMPI.length];
+      t.playbackRate = neu;
+      taste("tempo").textContent = `${neu.toLocaleString("de-DE")}x`;
+    });
+    taste("schliessen").addEventListener("click", () => {
+      ton?.pause();
+      leiste.hidden = true;
+      if (aktuell >= 0) block(d.abschnitte[aktuell].n)?.classList.remove(AKTIV);
+      aktuell = -1;
+    });
+    lauf.addEventListener("input", () => {
+      nurAbschnitt(null);
+      springen(Number(lauf.value));
+    });
+
+    // Symbol an jeder Zwischenüberschrift: liest nur ihren Abschnitt bis zur nächsten Überschrift gleicher oder
+    // höherer Stufe
+    const symbol = wurzel.querySelector<HTMLTemplateElement>(".abschnitt-symbol")!.innerHTML;
+    const ueberschriften = d.abschnitte
+      .map((a) => ({ a, el: block(a.n) }))
+      .filter((x): x is { a: (typeof d.abschnitte)[number]; el: HTMLElement } => x.a.n >= 0 && !!x.el && ABSCHNITT_EBENEN.test(x.el.tagName));
+    ueberschriften.forEach(({ a, el }, i) => {
+      const stufe = Number(el.tagName[1]);
+      const naechste = ueberschriften.slice(i + 1).find((x) => Number(x.el.tagName[1]) <= stufe);
+      const bis = naechste ? naechste.a.start : d.dauer;
+      const k = document.createElement("button");
+      k.type = "button";
+      k.className = "abschnitt-vorlesen";
+      k.title = "Nur diesen Abschnitt vorlesen";
+      k.setAttribute("aria-label", `Nur den Abschnitt ${el.textContent?.trim()} vorlesen`);
+      k.innerHTML = symbol;
+      k.addEventListener("click", () => {
+        oeffnen();
+        nurAbschnitt(bis);
+        springen(a.start);
+        void holen().play();
+      });
+      el.append(k);
+    });
+
+    // wer selbst rollt, liest woanders weiter: Mitlesen aus, bis der Knopf es wieder einschaltet
+    const selbstGerollt = () => {
+      if (folgen && !leiste.hidden && ton && !ton.paused) folgenSetzen(false);
+    };
+    window.addEventListener("wheel", selbstGerollt, { passive: true });
+    window.addEventListener("touchmove", selbstGerollt, { passive: true });
+    window.addEventListener("keydown", (e) => {
+      const ziel = e.target as HTMLElement;
+      if (ROLLTASTEN.has(e.key) && !ziel.closest("button, input, textarea, select")) selbstGerollt();
+    });
+  }
+
+  const wurzel = document.querySelector<HTMLElement>("[data-vorlesung]");
+  if (wurzel) einrichten(wurzel);
+</script>
+
+<style>
+  .vorlesen {
+    display: contents;
+  }
+
+  .knopf {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--akzent);
+    border-radius: var(--radius);
+    background: var(--akzent-grund);
+    color: var(--akzent);
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+  }
+
+  .knopf[hidden] {
+    display: none;
+  }
+
+  .knopf:hover {
+    background: var(--markierung);
+  }
+
+  .knopf .leise {
+    color: var(--text-leise);
+  }
+
+  .symbol,
+  .taste :global(svg) {
+    display: inline-flex;
+    width: 1.05em;
+    height: 1.05em;
+  }
+
+  .symbol :global(svg),
+  .taste :global(svg) {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+
+  /* bleibt unter der Kopfleiste stehen, solange vorgelesen wird */
+  .leiste {
+    position: fixed;
+    /* Vorgabe; der Spieler legt sie an die tatsächliche Unterkante der Kopfleiste */
+    top: calc(var(--kopf-hoehe) + env(safe-area-inset-top) + 1px);
+    right: 0;
+    left: 0;
+    z-index: 4;
+    border-bottom: 1px solid var(--linie);
+    background: var(--grund-tief);
+    color: var(--text);
+    font-family: var(--schrift-mono);
+    font-size: var(--groesse-klein);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .leiste[hidden] {
+    display: none;
+  }
+
+  .innen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding-block: 0.5rem;
+  }
+
+  .tasten {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .taste {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 0.6rem;
+    border: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-stark);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .taste:hover {
+    background: var(--akzent-grund);
+  }
+
+  .taste :global(svg) {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .spielen {
+    background: var(--knopf);
+    color: var(--knopf-text);
+  }
+
+  .spielen:hover {
+    background: var(--knopf);
+    opacity: 0.9;
+  }
+
+  /* Symbole ohne Grundlinie, sonst sitzen sie in der Taste zu hoch */
+  .taste,
+  .spielen span {
+    line-height: 0;
+  }
+
+  .spielen span {
+    display: inline-flex;
+  }
+
+  .spielen .aus,
+  .spielt .spielen .an {
+    display: none;
+  }
+
+  .spielt .spielen .aus {
+    display: inline-flex;
+  }
+
+  .tempo {
+    line-height: 1;
+  }
+
+  .mitlesen[aria-pressed="true"] {
+    color: var(--akzent);
+    background: var(--akzent-grund);
+  }
+
+  .mitlesen[aria-pressed="false"] {
+    color: var(--text-leise);
+  }
+
+  .lauf {
+    flex: 1 1 10rem;
+    min-width: 0;
+    accent-color: var(--akzent);
+  }
+
+  .lautstaerke {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-leise);
+  }
+
+  .lautstaerke[hidden] {
+    display: none;
+  }
+
+  .lautstaerke input {
+    width: 6rem;
+    accent-color: var(--akzent);
+  }
+
+  .nur-abschnitt {
+    color: var(--akzent);
+    white-space: nowrap;
+  }
+
+  .nur-abschnitt[hidden] {
+    display: none;
+  }
+
+  /* am Telefon alles in einer Zeile: Zeit und Lautstärke weichen, die Lautstärke regeln dort die Tasten am Gerät */
+  @media (max-width: 40rem) {
+    .innen {
+      flex-wrap: nowrap;
+      gap: 0.25rem;
+    }
+
+    .taste {
+      min-width: 2.4rem;
+      padding: 0 0.35rem;
+    }
+
+    .tasten {
+      gap: 0;
+    }
+
+    .zeit,
+    .lautstaerke,
+    .nur-abschnitt {
+      display: none;
+    }
+
+    .lauf {
+      flex-basis: 3rem;
+    }
+  }
+
+  /* Symbol "nur diesen Abschnitt vorlesen" hinter einer Zwischenüberschrift */
+  :global(.abschnitt-vorlesen) {
+    display: inline-grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    margin-left: 0.5rem;
+    padding: 0;
+    border: 1px solid var(--linie);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-leise);
+    line-height: 0;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+
+  :global(.abschnitt-vorlesen:hover) {
+    border-color: var(--akzent);
+    color: var(--akzent);
+  }
+
+  :global(.abschnitt-vorlesen svg) {
+    width: 0.95rem;
+    height: 0.95rem;
+    fill: currentColor;
+  }
+
+  .zeit {
+    color: var(--text-leise);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Abstand beim Mitlesen: unter Kopfleiste und Leiste (setzt der Spieler) */
+  :global([data-vorlesen]),
+  :global(h1) {
+    scroll-margin-top: var(--vorlesen-abstand, 8rem);
+  }
+
+  /* der gerade gesprochene Block; der Schatten gibt Luft, ohne dass sich der Text verschiebt */
+  :global(.vorlesen-aktiv) {
+    border-radius: 2px;
+    background: var(--akzent-grund);
+    box-shadow: 0 0 0 0.4rem var(--akzent-grund);
+    transition: background-color 0.3s;
+  }
+</style>

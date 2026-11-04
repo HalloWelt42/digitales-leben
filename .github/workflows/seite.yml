@@ -1,9 +1,11 @@
-# Baut die Seite bei jedem Push auf main und veröffentlicht sie als Pages-Seite des Repos.
+# Baut die Seite bei jedem Push auf main und veröffentlicht sie als Pages-Seite des Repos. Der Ton des Vorlesens liegt
+# im eigenen Zweig vorlesen (nur die Tonspuren, immer genau ein Stand); der Bau legt ihn nach public/vorlesen. Ein Push
+# dorthin baut die Seite ebenfalls neu, immer mit dem Code aus main.
 name: Seite bauen und veröffentlichen
 
 on:
   push:
-    branches: [main]
+    branches: [main, vorlesen]
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,15 @@ jobs:
       ASTRO_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Ton des Vorlesens holen
+        run: |
+          if git ls-remote --exit-code origin refs/heads/vorlesen > /dev/null; then
+            git fetch --depth 1 origin vorlesen
+            mkdir -p public/vorlesen
+            git archive FETCH_HEAD | tar -x -C public/vorlesen
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc

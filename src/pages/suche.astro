@@ -5,7 +5,7 @@ import Seitenkopf from "../components/Seitenkopf.astro";
 import { pfad } from "../lib/pfad";
 ---
 
-<Grundgeruest titel="Suche" beschreibung="Alle Artikel durchsuchen: Titel, Zusammenfassung, Schlagworte und Text.">
+<Grundgeruest titel="Suche" beschreibung="Durchsucht Titel, Zusammenfassung, Schlagworte und Text aller Artikel.">
   <Seitenkopf pfad={[{ name: "Suche" }]} titel="Suche" />
   <div class="suche">
     <form data-suche data-index={pfad("/suchindex.json")} role="search">

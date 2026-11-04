@@ -52,5 +52,5 @@ Artikel, die der Browser noch nicht kennt, die Marke "Neu" (`src/lib/gesehen.ts`
 
 ## Schriften
 
-Fraunces (Überschriften), Barlow (Text) und JetBrains Mono (Code, Etiketten), alle unter der SIL Open Font License,
+Source Serif 4 (Überschriften), Barlow (Text) und JetBrains Mono (Code, Etiketten), alle unter der SIL Open Font License,
 aus npm-Paketen selbst ausgeliefert, ohne fremde Server.

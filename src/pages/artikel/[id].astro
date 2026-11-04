@@ -7,6 +7,7 @@ import { Image } from "astro:assets";
 import Grundgeruest from "../../layouts/Grundgeruest.astro";
 import Seitenkopf from "../../components/Seitenkopf.astro";
 import AutorKasten from "../../components/AutorKasten.astro";
+import Vorlesen from "../../components/Vorlesen.astro";
 import { SCHLAGWORT_ARTEN, artikelArt, nachtragArt } from "../../lib/aufbau";
 import { alleArtikel, gliederungPruefen, istEntwurf, lesezeit, nachtraege, schlagwortPfad, schlagwortWerte, type Artikel } from "../../lib/artikel";
 import { datumIso, datumText } from "../../lib/datum";
@@ -45,6 +46,7 @@ const art = artikelArt(data.art).name;
       <span>von {SEITE.autor}</span>
       <span><time datetime={datumIso(data.datum)}>{datumText(data.datum)}</time></span>
       <span>{lesezeit(artikel)} Min Lesezeit</span>
+      <Vorlesen kennung={artikel.id} titel={data.titel} />
       {
         liste.length > 0 && (
           <a href="#nachtraege">
@@ -57,7 +59,12 @@ const art = artikelArt(data.art).name;
 
   <div class="koerper">
     <article class="inhalt">
-      {data.bild && <Image class="artikelbild" src={data.bild} alt={data.bildtext!} widths={[720, 1080, data.bild.width]} sizes="(min-width: 900px) 46rem, 100vw" loading="eager" />}
+      {data.bild && (
+        <span class="artikelbild-rahmen">
+          <Image class="artikelbild" src={data.bild} alt={data.bildtext!} widths={[720, 1080, data.bild.width]} sizes="(min-width: 900px) 46rem, 100vw" loading="eager" />
+          {data.bildki && <span class="ki-kennung">KI-Bild</span>}
+        </span>
+      )}
       {
         data.frage && (
           <section class="frage" aria-labelledby="frage">

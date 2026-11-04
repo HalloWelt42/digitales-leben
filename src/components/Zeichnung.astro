@@ -5,16 +5,25 @@
 //   import Zeichnung from "../../components/Zeichnung.astro";
 //   import glas from "./<name>-glas.webp";
 //   <Zeichnung bild={glas} text="Was die Zeichnung zeigt" />
+// Mit `ki` (von der Redaktion gesetzt, wenn die Zeichnung eine KI-Erzeugung ist) steht darunter die Kennung KI-Bild.
 
 interface Props {
   bild: ImageMetadata;
   text: string;
+  ki?: boolean;
 }
 
-const { bild, text } = Astro.props;
+const { bild, text, ki = false } = Astro.props;
 ---
 
-<span class="zeichnung" role="img" aria-label={text} style={`--maske: url("${bild.src}")`}></span>
+{ki ? (
+  <span class="zeichnung-rahmen">
+    <span class="zeichnung" role="img" aria-label={text} style={`--maske: url("${bild.src}")`}></span>
+    <span class="ki-kennung">KI-Bild</span>
+  </span>
+) : (
+  <span class="zeichnung" role="img" aria-label={text} style={`--maske: url("${bild.src}")`}></span>
+)}
 
 <style>
   .zeichnung {
@@ -27,12 +36,32 @@ const { bild, text } = Astro.props;
     mask: var(--maske) center / contain no-repeat;
   }
 
+  /* mit Kennung trägt der Rahmen Breite und Lage, die Zeichnung füllt ihn */
+  .zeichnung-rahmen {
+    display: block;
+    width: min(100%, var(--zeichnung-breite, 20rem));
+    margin: 0 auto 1rem;
+    text-align: center;
+  }
+
+  .zeichnung-rahmen .zeichnung {
+    width: 100%;
+    margin: 0;
+  }
+
   @media (min-width: 700px) {
-    .zeichnung {
+    .zeichnung,
+    .zeichnung-rahmen {
       float: right;
       clear: both;
       width: min(44%, var(--zeichnung-breite, 20rem));
       margin: 0.5rem 0 1rem 2rem;
+    }
+
+    .zeichnung-rahmen .zeichnung {
+      float: none;
+      width: 100%;
+      margin: 0;
     }
   }
 </style>

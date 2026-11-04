@@ -41,6 +41,8 @@ const artikel = defineCollection({
       zusammenfassung: z.string().min(1),
       bild: image().optional(),
       bildtext: z.string().min(1).optional(),
+      // das Artikelbild ist eine KI-Erzeugung: darunter steht die Kennung KI-Bild (setzt die Redaktion)
+      bildki: z.boolean().default(false),
       datum: z.coerce.date(),
       schlagworte: schlagworte.default({ thema: [], modell: [], faehigkeit: [], geraet: [] }),
       nachtraege: z.array(nachtrag).default([]),

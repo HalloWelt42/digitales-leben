@@ -21,7 +21,7 @@
   --verweis: #1c5d99;
   --markierung: rgb(196 86 27 / 0.2);
 
-  --schrift-titel: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --schrift-titel: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
   --schrift-text: "Barlow", system-ui, sans-serif;
   --schrift-mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
 
@@ -98,10 +98,15 @@ h4 {
   margin: 0;
   color: var(--text-stark);
   font-family: var(--schrift-titel);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.12;
-  letter-spacing: -0.015em;
   text-wrap: balance;
+}
+
+/* kleine Stufen brauchen mehr Gewicht, um sich vom Fließtext abzuheben */
+h3,
+h4 {
+  font-weight: 600;
 }
 
 p {
@@ -278,11 +283,33 @@ pre {
   border-radius: var(--radius);
 }
 
+/* Kennung KI-Bild: ein Bild mit dem Titel "KI-Bild" (Markdown ![Beschreibung](datei "KI-Bild"), so setzt es die
+   Redaktion) bekommt darunter die kurze Kennung; der Absatz hat sonst keinen Text und bleibt beim Vorlesen stumm */
+.inhalt p:has(> img[title="KI-Bild"])::after,
+.ki-kennung {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--groesse-klein);
+  color: var(--text-leise);
+}
+.inhalt p:has(> img[title="KI-Bild"])::after {
+  content: "KI-Bild";
+}
+
 /* Artikelbild oben im Artikel (Angabe bild), über die volle Textbreite */
 .inhalt .artikelbild {
   display: block;
   width: 100%;
   margin-bottom: 2rem;
+}
+
+/* im Artikel steht das Bild in einem Rahmen, damit die Kennung KI-Bild direkt darunter sitzt (Angabe bildki) */
+.inhalt .artikelbild-rahmen {
+  display: block;
+  margin-bottom: 2rem;
+}
+.inhalt .artikelbild-rahmen .artikelbild {
+  margin-bottom: 0;
 }
 
 /* Codeblöcke mit zwei Farbsätzen (astro.config.mjs); welcher gilt, entscheidet das Thema */

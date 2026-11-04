@@ -10,7 +10,7 @@ export const SEITE = {
   // Marke und Autor in einem; der Auftritt ist anonym, nie ein echter Name
   autor: "HalloWelt42",
   beschreibung:
-    "Fachartikel rund um Technik und digitales Leben: Software, Netz und Server, KI und Werkzeuge, Erfahrungen aus der Praxis, Messungen und Vergleiche.",
+    "Fachartikel über Software, Netz und Server, KI und Werkzeuge, mit Erfahrungen, Messungen und Vergleichen aus der eigenen Praxis.",
   sprache: "de",
   farbe: { dunkel: "#1d1b18", hell: "#faf8f4" },
 } as const;
